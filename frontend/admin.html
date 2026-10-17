@@ -1,0 +1,547 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AnimeDekho Admin Panel</title>
+  <style>
+   
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --bg: #080b16;
+  --panel: rgba(20, 25, 45, 0.86);
+  --border: rgba(167, 139, 250, 0.22);
+  --purple: #a78bfa;
+  --pink: #f472b6;
+  --text: #f8fafc;
+  --muted: #a6b0c7;
+}
+
+body {
+  margin: 0;
+  padding: 28px 18px;
+  min-height: 100vh;
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(ellipse at 15% 10%, #35216b 0, transparent 38%),
+    radial-gradient(ellipse at 90% 85%, #351a46 0, transparent 35%),
+    var(--bg);
+  background-attachment: fixed;
+}
+
+.container {
+  width: 100%;
+  max-width: 1050px;
+  margin: auto;
+  animation: pageEnter .65s ease both;
+}
+
+h1 {
+  margin-bottom: 8px;
+  font-size: clamp(27px, 5vw, 42px);
+  letter-spacing: -1px;
+  background: linear-gradient(90deg, #c4b5fd, #f0abfc, #93c5fd);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+h2 {
+  font-size: 20px;
+}
+
+.container > p {
+  color: var(--muted);
+}
+
+.card {
+  margin: 22px 0;
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--panel);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .24);
+  backdrop-filter: blur(16px);
+  animation: cardEnter .55s ease both;
+  transition: border-color .25s, transform .25s;
+}
+
+.card:hover {
+  border-color: rgba(196, 181, 253, .5);
+}
+
+input,
+textarea,
+select,
+button {
+  width: 100%;
+  margin: 7px 0;
+  padding: 13px 15px;
+  border-radius: 10px;
+  font: inherit;
+}
+
+input,
+textarea,
+select {
+  color: var(--text);
+  background: rgba(7, 10, 23, .8);
+  border: 1px solid #353d59;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--purple);
+  box-shadow: 0 0 0 3px rgba(167, 139, 250, .12);
+}
+
+textarea {
+  min-height: 95px;
+  resize: vertical;
+}
+
+button {
+  border: 0;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+  background: linear-gradient(100deg, #7c3aed, #a855f7, #c026d3);
+  background-size: 180% 180%;
+  transition: transform .2s, box-shadow .2s, background-position .3s;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  background-position: 100% 0;
+  box-shadow: 0 7px 24px rgba(168, 85, 247, .25);
+}
+
+button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.secondary {
+  background: #303a55;
+}
+
+.danger {
+  background: linear-gradient(100deg, #b91c1c, #ef4444);
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.actions button {
+  flex: 1;
+}
+
+.anime-item {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr);
+  gap: 16px;
+  padding: 18px 0;
+  border-bottom: 1px solid #30364b;
+  animation: cardEnter .4s ease both;
+}
+
+.anime-item img {
+  width: 90px;
+  height: 125px;
+  object-fit: cover;
+  background: #0b1020;
+  border-radius: 10px;
+}
+
+.anime-item h3 {
+  margin-top: 0;
+  overflow-wrap: anywhere;
+}
+
+.muted,
+#message {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+#message {
+  white-space: pre-wrap;
+  padding: 10px 0;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.register-link {
+  margin: 14px 0 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.register-link a {
+  color: #c4b5fd;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.register-link a:hover {
+  color: #f0abfc;
+  text-decoration: underline;
+}
+
+@keyframes pageEnter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes cardEnter {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (max-width: 550px) {
+  body { padding: 12px; }
+  .card { padding: 16px; border-radius: 15px; }
+  .actions { flex-direction: column; }
+  .anime-item { grid-template-columns: 72px minmax(0, 1fr); gap: 12px; }
+  .anime-item img { width: 72px; height: 102px; }
+}
+
+  </style>
+</head>
+<body>
+<main class="container">
+  <h1>AnimeDekho Admin Panel</h1>
+  <p>Manage your AnimeDekho website.</p>
+
+  <section class="card">
+    <h2>Admin Login</h2>
+    <form id="loginForm">
+      <input id="loginEmail" type="email" placeholder="Admin email" required>
+      <input id="loginPassword" type="password" placeholder="Admin password" required>
+      <button type="submit">Login</button>
+    </form>
+    <p class="register-link">
+  New admin? <a href="admin-register.html">Register here</a>
+</p>
+    <button id="logoutButton" class="secondary hidden" type="button">Logout</button>
+  </section>
+
+
+  <section id="animeSection" class="card hidden">
+    <h2 id="animeFormTitle">Add Anime</h2>
+    <form id="animeForm">
+      <input id="animeTitle" type="text" placeholder="Anime title" required>
+      <textarea id="animeDescription" placeholder="Description"></textarea>
+      <input id="animePoster" type="url" placeholder="Poster image URL (https://...)">
+      <input id="animeRating" type="number" min="0" max="10" step="0.1" placeholder="Rating (0–10)">
+      <input id="animeYear" type="number" min="1900" max="2100" placeholder="Release year">
+      <input id="animeGenre" type="text" placeholder="Genres, comma separated (Action, Fantasy)">
+      <input id="animeEpisodes" type="number" min="0" step="1" placeholder="Total episodes">
+      <select id="animeStatus">
+        <option value="Ongoing">Ongoing</option>
+        <option value="Completed">Completed</option>
+        <option value="Coming Soon">Coming Soon</option>
+      </select>
+      <button id="saveAnimeButton" type="submit">Add Anime</button>
+      <button id="cancelEditButton" class="secondary hidden" type="button">Cancel Edit</button>
+    </form>
+  </section>
+
+  <section id="animeListSection" class="card hidden">
+    <div class="actions">
+      <h2 style="flex:2">Anime List</h2>
+      <button id="refreshButton" type="button">Refresh List</button>
+    </div>
+    <div id="animeList">Loading anime...</div>
+  </section>
+
+  <p id="message" role="status">Please log in as an admin.</p>
+</main>
+
+<script>
+  const API = 'http://localhost:5000/api';
+ let adminToken = sessionStorage.getItem('adminToken') || '';
+  let editingAnimeId = null;
+
+  const $ = id => document.getElementById(id);
+  const message = $('message');
+
+  async function apiRequest(path, options = {}) {
+    const headers = {
+      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+      ...(adminToken ? { Authorization: `Bearer ${adminToken}` } : {}),
+      ...(options.headers || {})
+    };
+
+    const response = await fetch(`${API}${path}`, { ...options, headers });
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(data.error || data.message || `Request failed (${response.status})`);
+    }
+    return data;
+  }
+
+  function showAnimeTools(show) {
+    $('animeSection').classList.toggle('hidden', !show);
+    $('animeListSection').classList.toggle('hidden', !show);
+    $('logoutButton').classList.toggle('hidden', !show);
+  }
+
+  $('loginForm').addEventListener('submit', async event => {
+    event.preventDefault();
+    message.textContent = 'Logging in...';
+
+    try {
+      const data = await apiRequest('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({
+          email: $('loginEmail').value.trim(),
+          password: $('loginPassword').value
+        })
+      });
+
+      const me = await apiRequest('/auth/me', {
+        headers: { Authorization: `Bearer ${data.token}` }
+      });
+
+      if (me.role !== 'admin') {
+        adminToken = '';
+        showAnimeTools(false);
+        throw new Error('This account is not an admin.');
+      }
+
+adminToken = data.token;
+sessionStorage.setItem('adminToken', data.token);
+
+window.location.href = 'admin-home.html';
+return;
+    } catch (error) {
+      message.textContent = error.message;
+    }
+  });
+
+  $('logoutButton').addEventListener('click', () => {
+    adminToken = '';
+    editingAnimeId = null;
+    $('loginPassword').value = '';
+    resetAnimeForm();
+    showAnimeTools(false);
+    message.textContent = 'Logged out.';
+  });
+
+  $('adminForm').addEventListener('submit', async event => {
+    event.preventDefault();
+    if (!adminToken) {
+      message.textContent = 'Please log in as an admin first.';
+      return;
+    }
+
+    message.textContent = 'Creating admin...';
+    try {
+      const data = await apiRequest('/admin/admins', {
+        method: 'POST',
+        body: JSON.stringify({
+          username: $('newUsername').value.trim(),
+          email: $('newEmail').value.trim(),
+          password: $('newPassword').value
+        })
+      });
+
+      message.textContent = `Success: ${data.admin.username} created as ${data.admin.role}.`;
+      $('adminForm').reset();
+    } catch (error) {
+      message.textContent = error.message;
+    }
+  });
+
+  function resetAnimeForm() {
+    $('animeForm').reset();
+    editingAnimeId = null;
+    $('animeFormTitle').textContent = 'Add Anime';
+    $('saveAnimeButton').textContent = 'Add Anime';
+    $('cancelEditButton').classList.add('hidden');
+  }
+
+  $('animeForm').addEventListener('submit', async event => {
+    event.preventDefault();
+    if (!adminToken) {
+      message.textContent = 'Please log in as an admin first.';
+      return;
+    }
+
+    const title = $('animeTitle').value.trim();
+    const ratingText = $('animeRating').value;
+    const yearText = $('animeYear').value;
+    const episodesText = $('animeEpisodes').value;
+
+    const anime = {
+      title,
+      description: $('animeDescription').value.trim(),
+      poster: $('animePoster').value.trim(),
+      rating: ratingText === '' ? 0 : Number(ratingText),
+      year: yearText === '' ? new Date().getFullYear() : Number(yearText),
+      genre: $('animeGenre').value.split(',').map(g => g.trim()).filter(Boolean),
+      totalEpisodes: episodesText === '' ? 24 : Number(episodesText),
+      status: $('animeStatus').value
+    };
+
+    if (!title) {
+      message.textContent = 'Anime title is required.';
+      return;
+    }
+    if (anime.rating < 0 || anime.rating > 10 ||
+        !Number.isInteger(anime.year) || anime.year < 1900 ||
+        !Number.isInteger(anime.totalEpisodes) || anime.totalEpisodes < 0) {
+      message.textContent = 'Check rating, year and total episodes.';
+      return;
+    }
+
+    const isEditing = Boolean(editingAnimeId);
+    const path = isEditing ? `/anime/${editingAnimeId}` : '/anime';
+    message.textContent = isEditing ? 'Updating anime...' : 'Adding anime...';
+    $('saveAnimeButton').disabled = true;
+
+    try {
+      const data = await apiRequest(path, {
+        method: isEditing ? 'PUT' : 'POST',
+        body: JSON.stringify(anime)
+      });
+      message.textContent = data.message || (isEditing ? 'Anime updated.' : 'Anime added.');
+      resetAnimeForm();
+      await loadAnime();
+    } catch (error) {
+      message.textContent = error.message;
+    } finally {
+      $('saveAnimeButton').disabled = false;
+    }
+  });
+
+  $('cancelEditButton').addEventListener('click', resetAnimeForm);
+  $('refreshButton').addEventListener('click', loadAnime);
+
+  async function loadAnime() {
+    if (!adminToken) return;
+
+    $('animeList').textContent = 'Loading anime...';
+    try {
+      const animeList = await apiRequest('/anime');
+      $('animeList').replaceChildren();
+
+      if (!animeList.length) {
+        $('animeList').textContent = 'No anime found. Add your first anime above.';
+        return;
+      }
+
+      for (const anime of animeList) {
+        const item = document.createElement('article');
+        item.className = 'anime-item';
+
+        const img = document.createElement('img');
+        img.alt = `${anime.title || 'Anime'} poster`;
+        img.loading = 'lazy';
+        img.src = anime.poster || '';
+        img.onerror = () => { img.style.visibility = 'hidden'; };
+
+        const content = document.createElement('div');
+        const title = document.createElement('h3');
+        title.textContent = anime.title || 'Untitled';
+
+        const details = document.createElement('p');
+        details.className = 'muted';
+        details.textContent =
+          `${anime.year ?? ''} · Rating: ${anime.rating ?? 0}/10 · Episodes: ${anime.totalEpisodes ?? 0}`;
+
+        const genre = document.createElement('p');
+        genre.textContent = `Genres: ${Array.isArray(anime.genre) ? anime.genre.join(', ') : anime.genre || 'None'} · Status: ${anime.status || 'Ongoing'}`;
+
+        const description = document.createElement('p');
+        description.textContent = anime.description || '';
+
+        const actions = document.createElement('div');
+        actions.className = 'actions';
+
+        const editButton = document.createElement('button');
+        editButton.type = 'button';
+        editButton.textContent = 'Edit';
+        editButton.addEventListener('click', () => startEdit(anime));
+
+        const deleteButton = document.createElement('button');
+        deleteButton.type = 'button';
+        deleteButton.className = 'danger';
+        deleteButton.textContent = 'Delete';
+        deleteButton.addEventListener('click', () => deleteAnime(anime._id, anime.title));
+
+        actions.append(editButton, deleteButton);
+        content.append(title, details, genre, description, actions);
+        item.append(img, content);
+        $('animeList').append(item);
+      }
+    } catch (error) {
+      $('animeList').textContent = error.message;
+      message.textContent = `Could not load anime: ${error.message}`;
+    }
+  }
+
+  function startEdit(anime) {
+    editingAnimeId = anime._id;
+    $('animeTitle').value = anime.title || '';
+    $('animeDescription').value = anime.description || '';
+    $('animePoster').value = anime.poster || '';
+    $('animeRating').value = anime.rating ?? 0;
+    $('animeYear').value = anime.year ?? new Date().getFullYear();
+    $('animeGenre').value = Array.isArray(anime.genre) ? anime.genre.join(', ') : anime.genre || '';
+    $('animeEpisodes').value = anime.totalEpisodes ?? 24;
+    $('animeStatus').value = anime.status || 'Ongoing';
+
+    $('animeFormTitle').textContent = 'Edit Anime';
+    $('saveAnimeButton').textContent = 'Save Changes';
+    $('cancelEditButton').classList.remove('hidden');
+    $('animeSection').scrollIntoView({ behavior: 'smooth' });
+    message.textContent = `Editing: ${anime.title}`;
+  }
+
+  async function deleteAnime(id, title) {
+    if (!adminToken) {
+      message.textContent = 'Please log in as an admin first.';
+      return;
+    }
+    if (!confirm(`Delete "${title}" permanently?`)) return;
+
+    message.textContent = `Deleting ${title}...`;
+    try {
+      const data = await apiRequest(`/anime/${id}`, { method: 'DELETE' });
+      message.textContent = data.message || 'Anime deleted.';
+      if (editingAnimeId === id) resetAnimeForm();
+      await loadAnime();
+    } catch (error) {
+      message.textContent = error.message;
+    }
+  }
+</script>
+</body>
+</html>

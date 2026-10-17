@@ -1,0 +1,166 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AnimeDekho | Create Admin</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      color: #f8fafc;
+      background:
+        radial-gradient(ellipse at top left, #35216b, transparent 45%),
+        radial-gradient(ellipse at bottom right, #401747, transparent 40%),
+        #080b16;
+    }
+
+    .register-card {
+      width: 100%;
+      max-width: 420px;
+      padding: 30px;
+      border: 1px solid rgba(167,139,250,.35);
+      border-radius: 20px;
+      background: rgba(20,25,45,.92);
+      box-shadow: 0 20px 65px #0007;
+      animation: enter .5s ease both;
+    }
+
+    h1 {
+      font-size: 28px;
+      color: #c4b5fd;
+      margin: 0 0 10px;
+    }
+
+    p {
+      color: #a6b0c7;
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    input, button {
+      width: 100%;
+      padding: 13px;
+      margin-top: 12px;
+      border-radius: 9px;
+      font-size: 15px;
+    }
+
+    input {
+      color: white;
+      background: #0b1020;
+      border: 1px solid #39415c;
+      outline: none;
+    }
+
+    input:focus { border-color: #a78bfa; }
+
+    button {
+      border: 0;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      background: linear-gradient(100deg, #7c3aed, #c026d3);
+      transition: transform .2s;
+    }
+
+    button:hover { transform: translateY(-2px); }
+    button:disabled { opacity: .6; cursor: wait; }
+
+    #message {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    a { color: #c4b5fd; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .back-link {
+      display: block;
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    @keyframes enter {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <main class="register-card">
+    <h1>Create Admin Account</h1>
+    <p>Register an additional administrator for AnimeDekho.</p>
+
+    <form id="registerForm">
+      <input id="username" type="text" placeholder="Admin username" required>
+      <input id="email" type="email" placeholder="Admin email" required>
+      <input id="password" type="password"
+        placeholder="Password (minimum 12 characters)"
+        minlength="12" required>
+      <button id="registerButton" type="submit">Create Account</button>
+    </form>
+
+    <p id="message" role="status"></p>
+    <a class="back-link" href="admin-dashboard.html">← Back to Admin Login</a>
+  </main>
+
+  <script>
+    const API = 'http://localhost:5000/api';
+    const form = document.getElementById('registerForm');
+    const message = document.getElementById('message');
+    const button = document.getElementById('registerButton');
+
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+
+      const token = sessionStorage.getItem('adminToken');
+
+      if (!token) {
+        message.textContent =
+          'Admin authorization required. Please log in as an existing admin first.';
+        return;
+      }
+
+      button.disabled = true;
+      message.textContent = 'Creating admin account...';
+
+      try {
+        const response = await fetch(`${API}/admin/admins`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            username: document.getElementById('username').value.trim(),
+            email: document.getElementById('email').value.trim(),
+            password: document.getElementById('password').value
+          })
+        });
+
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(data.error || data.message || 'Registration failed.');
+        }
+
+        message.textContent =
+          'Admin account created successfully! You can now return to Admin Login.';
+        form.reset();
+      } catch (error) {
+        message.textContent = error.message;
+      } finally {
+        button.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

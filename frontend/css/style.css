@@ -1,0 +1,1013 @@
+
+/* =========================================
+   AnimeDekhoBD — Clean Main Stylesheet
+   Theme: Dark Navy + Yellow + Purple
+========================================= */
+
+/* 1. Base */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 90px;
+}
+
+body {
+  overflow-x: hidden;
+  background:
+    radial-gradient(ellipse at 15% 0%, rgba(91, 54, 180, .13), transparent 35%),
+    #0a0e27;
+  color: #fff;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+/* 2. Navbar */
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding: 15px 0;
+  background: rgba(15, 20, 48, .90);
+  border-bottom: 1px solid rgba(255, 235, 59, .10);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .5);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: background .3s ease, box-shadow .3s ease;
+}
+
+.navbar .container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  transition: transform .3s ease, text-shadow .3s ease;
+}
+
+.logo h2 {
+  color: #ffeb3b;
+  font-size: 28px;
+  transition: transform .3s ease, text-shadow .3s ease;
+}
+
+.logo:hover,
+.logo h2:hover {
+  transform: translateY(-2px);
+  text-shadow: 0 0 18px rgba(255, 235, 59, .4);
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  list-style: none;
+}
+
+.nav-links a {
+  position: relative;
+  color: #fff;
+  font-size: 16px;
+  text-decoration: none;
+  transition: color .25s ease;
+}
+
+.nav-links a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -5px;
+  width: 100%;
+  height: 2px;
+  background: #ffeb3b;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform .25s ease;
+}
+
+.nav-links a:hover {
+  color: #ffeb3b;
+}
+
+.nav-links a:hover::after {
+  transform: scaleX(1);
+}
+
+/* 3. Search */
+.search-box,
+#searchInput {
+  width: 200px;
+  padding: 10px 15px;
+  color: #fff;
+  font-size: 14px;
+  background: rgba(255, 255, 255, .1);
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 20px;
+  outline: none;
+  transition: width .25s ease, border-color .25s ease,
+    box-shadow .25s ease, background .25s ease;
+}
+
+.search-box::placeholder,
+#searchInput::placeholder {
+  color: rgba(255, 255, 255, .5);
+  transition: opacity .25s ease;
+}
+
+.search-box:focus,
+#searchInput:focus {
+  border-color: rgba(255, 235, 59, .75);
+  background: #111735;
+  box-shadow: 0 0 0 3px rgba(255, 235, 59, .1),
+    0 0 18px rgba(255, 235, 59, .15);
+}
+
+#searchInput:focus::placeholder {
+  opacity: .55;
+}
+
+#searchInput:focus-visible {
+  outline: 2px solid rgba(255, 235, 59, .5);
+  outline-offset: 3px;
+}
+
+/* 4. Buttons */
+.btn-login,
+.btn-watch,
+.see-all-btn {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform .25s ease, box-shadow .25s ease,
+    background .25s ease, color .25s ease;
+}
+
+.btn-login {
+  padding: 10px 20px;
+  color: #000;
+  font-size: 14px;
+  font-weight: bold;
+  background: #ffeb3b;
+  border: none;
+  border-radius: 20px;
+}
+
+.btn-watch {
+  padding: 15px 40px;
+  color: #000;
+  font-size: 16px;
+  font-weight: bold;
+  background: #ffeb3b;
+  border: none;
+  border-radius: 5px;
+  box-shadow: 0 5px 20px rgba(255, 235, 59, .12);
+}
+
+.btn-login:hover,
+.btn-watch:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(255, 235, 59, .22);
+}
+
+.btn-watch:hover {
+  color: #000;
+  background: #fff;
+  filter: brightness(1.05);
+}
+
+.btn-login:active,
+.btn-watch:active,
+.see-all-btn:active {
+  transform: scale(.97);
+}
+
+/* 5. Three-dot menu
+   Keep existing HTML positioning rules if defined inline. */
+#moreMenuBtn {
+  transition: transform .25s ease, background-color .25s ease;
+}
+
+#moreMenuBtn:hover {
+  transform: scale(1.08);
+  background-color: rgba(255, 235, 59, .12);
+}
+
+#moreMenu {
+  transform-origin: top right;
+  animation: menuPopIn .2s ease-out;
+}
+
+#moreMenu a,
+#moreMenu button {
+  transition: background-color .2s ease, color .2s ease,
+    padding-left .2s ease;
+}
+
+#moreMenu a:hover,
+#moreMenu button:hover {
+  color: #ffeb3b;
+  padding-left: 18px;
+}
+
+/* 6. Featured banner */
+.featured {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 40px;
+  min-height: 400px;
+  padding: 60px 20px;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 85% 45%, rgba(255, 235, 59, .10), transparent 48%),
+    radial-gradient(ellipse at 80% 40%, rgba(113, 73, 210, .20), transparent 48%),
+    linear-gradient(120deg, #101735, #16213e 60%, #211744);
+}
+
+.featured::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(
+    110deg,
+    transparent 20%,
+    rgba(255, 255, 255, .04) 48%,
+    transparent 72%
+  );
+  background-size: 220% 100%;
+  animation: featuredLightPass 12s ease-in-out infinite;
+}
+
+.featured-content {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  animation: featuredTextEnter .8s ease-out both;
+}
+
+.featured-content h1 {
+  margin-bottom: 20px;
+  color: #ffeb3b;
+  font-size: 48px;
+  line-height: 1.12;
+  text-wrap: balance;
+  text-shadow: 0 0 20px rgba(255, 235, 59, .14);
+}
+
+.featured-content p {
+  max-width: 500px;
+  margin-bottom: 20px;
+  color: #ccc;
+  font-size: 16px;
+  line-height: 1.75;
+}
+
+.featured-info {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+  margin-bottom: 20px;
+  font-size: 16px;
+}
+
+.featured-info span {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 15px;
+  white-space: nowrap;
+  background: rgba(255, 235, 59, .1);
+  border-radius: 5px;
+}
+
+#featured-rating,
+#featured-year,
+#featured-duration {
+  margin-right: 4px;
+}
+
+.featured-poster {
+  position: relative;
+  width: 350px;
+  height: 450px;
+  flex-shrink: 0;
+  object-fit: cover;
+  border: 1px solid rgba(255, 235, 59, .25);
+  border-radius: 14px;
+  box-shadow: 0 15px 45px rgba(0, 0, 0, .4),
+    0 0 35px rgba(132, 83, 255, .18);
+  animation: featuredPosterEnter .9s ease-out both,
+    posterFloat 6s ease-in-out 1s infinite;
+  transition: box-shadow .35s ease, border-color .35s ease;
+}
+
+.featured-poster:hover {
+  border-color: rgba(255, 235, 59, .75);
+  box-shadow: 0 20px 55px rgba(0, 0, 0, .48),
+    0 0 40px rgba(132, 83, 255, .25);
+}
+
+/* 7. Section headings */
+.watch-history-section,
+.top10-section,
+.all-anime-section {
+  padding: 40px 20px;
+}
+
+.watch-history-section h2,
+.top10-section h2,
+.all-anime-section h2 {
+  margin-bottom: 30px;
+  color: #ffeb3b;
+  font-size: 32px;
+  letter-spacing: .2px;
+  text-wrap: balance;
+}
+
+.genre-results h2 {
+  margin-top: 0;
+  letter-spacing: .2px;
+  text-wrap: balance;
+}
+
+.section-header {
+  position: relative;
+}
+
+.section-header h2 {
+  position: relative;
+}
+
+.section-header h2::after {
+  content: "";
+  display: block;
+  width: 46px;
+  height: 3px;
+  margin-top: 9px;
+  background: linear-gradient(90deg, #ffeb3b, #a78bfa);
+  border-radius: 10px;
+}
+
+.see-all-btn:hover {
+  box-shadow: 0 4px 15px rgba(229, 9, 20, .18);
+}
+
+/* 8. Anime cards and grids */
+.anime-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.anime-card,
+.anime-item,
+.movie-card {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  background: rgba(255, 255, 255, .05);
+  border: 1px solid rgba(255, 235, 59, .1);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform .32s ease, box-shadow .32s ease,
+    border-color .32s ease, background .32s ease;
+}
+
+.anime-card {
+  isolation: isolate;
+}
+
+.anime-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 235, 59, .08),
+    transparent 45%,
+    rgba(139, 92, 246, .1)
+  );
+  transition: opacity .3s ease;
+}
+
+.anime-card:hover,
+.anime-item:hover,
+.movie-card:hover {
+  transform: translateY(-7px);
+  border-color: rgba(255, 235, 59, .45);
+  background: rgba(255, 255, 255, .075);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, .3),
+    0 0 18px rgba(255, 235, 59, .07);
+}
+
+.anime-card:hover::after {
+  opacity: 1;
+}
+
+.anime-card img,
+.anime-item img,
+.movie-card img {
+  display: block;
+  width: 100%;
+  height: 280px;
+  object-fit: cover;
+  transition: transform .4s ease, filter .4s ease;
+}
+
+.anime-card:hover img,
+.anime-item:hover img,
+.movie-card:hover img {
+  transform: scale(1.045);
+  filter: brightness(1.08);
+}
+
+.anime-card h3,
+.anime-card h4,
+.anime-item h3,
+.anime-item h4,
+.movie-card h3,
+.movie-card h4 {
+  position: relative;
+  z-index: 2;
+  padding: 15px;
+  font-size: 16px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  transition: color .25s ease;
+}
+
+.anime-card p,
+.anime-item p,
+.movie-card p {
+  padding: 0 15px 15px;
+  color: #ccc;
+  font-size: 14px;
+}
+
+.anime-card:hover h3,
+.anime-card:hover h4,
+.anime-item:hover h3,
+.anime-item:hover h4,
+.movie-card:hover h3,
+.movie-card:hover h4 {
+  color: #ffeb3b;
+}
+
+/* Common rating selectors */
+.rating,
+.anime-rating,
+.rating-badge,
+.card-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #ffeb3b;
+  font-weight: 700;
+  transition: transform .25s ease;
+}
+
+.rating:hover,
+.anime-rating:hover,
+.rating-badge:hover,
+.card-rating:hover {
+  transform: translateY(-1px);
+}
+
+.anime-card .anime-info,
+.anime-card .card-info,
+.top10-item .anime-info,
+.top10-item .card-info {
+  transition: background-color .25s ease;
+}
+
+/* 9. Top 10 */
+.top10-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 15px;
+}
+
+.top10-item {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform .3s ease, box-shadow .3s ease;
+}
+
+.top10-item:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, .3);
+}
+
+.top10-item img {
+  display: block;
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, .09);
+  border-radius: 5px;
+  transition: transform .4s ease, filter .4s ease;
+}
+
+.top10-item:hover img {
+  transform: scale(1.045);
+  filter: brightness(1.08);
+}
+
+.top10-item .rank {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  color: #000;
+  font-size: 18px;
+  font-weight: bold;
+  background: #ffeb3b;
+  border-radius: 50%;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, .35);
+  transition: transform .25s ease;
+}
+
+.top10-item:hover .rank {
+  transform: scale(1.08);
+}
+
+.top10-item h3,
+.top10-item h4 {
+  margin-top: 9px;
+  font-size: 14px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  transition: color .25s ease;
+}
+
+.top10-item:hover h3,
+.top10-item:hover h4 {
+  color: #ffeb3b;
+}
+
+/* 10. Genre layout */
+.genre-layout {
+  width: 100%;
+  margin: 20px 0;
+  padding: 0 15px;
+}
+
+.genre-toggle {
+  margin-bottom: 15px;
+  padding: 10px 16px;
+  color: #fff;
+  font-size: 15px;
+  background: #222;
+  border: 1px solid #444;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.genre-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.genre-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 190px;
+  min-width: 190px;
+  padding: 15px;
+  background: #181818;
+  border-radius: 8px;
+}
+
+.genre-sidebar h3 {
+  margin: 0 0 8px;
+  color: #fff;
+}
+
+.genre-btn,
+.genre-sidebar button,
+#genreSidebar button {
+  width: 100%;
+  padding: 10px;
+  color: #ddd;
+  text-align: left;
+  background: #292929;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: transform .22s ease, background-color .22s ease,
+    color .22s ease, border-color .22s ease, box-shadow .22s ease;
+}
+
+.genre-btn:hover,
+.genre-sidebar button:hover,
+#genreSidebar button:hover {
+  transform: translateX(3px);
+  border-color: #ffeb3b;
+  box-shadow: 0 4px 14px rgba(255, 235, 59, .12);
+}
+
+.genre-btn.active,
+.genre-sidebar button.active,
+#genreSidebar button.active,
+.genre-btn[aria-pressed="true"],
+.genre-sidebar button[aria-pressed="true"],
+#genreSidebar button[aria-pressed="true"] {
+  color: #0a0e27;
+  background: #ffeb3b;
+  border-color: #ffeb3b;
+  box-shadow: 0 4px 16px rgba(255, 235, 59, .18);
+}
+
+.genre-results {
+  flex: 1;
+  min-width: 0;
+  color: inherit;
+}
+
+.genre-layout.genres-hidden .genre-sidebar {
+  display: none;
+}
+
+#genreAnimeResults {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 15px;
+  width: 100%;
+}
+
+#genreAnimeResults .anime-card {
+  min-width: 0;
+}
+
+#genreAnimeResults .anime-card img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+}
+
+/* 11. Footer */
+footer {
+  margin-top: 40px;
+  padding: 30px;
+  text-align: center;
+  background: #0a0e27;
+  border-top: 1px solid rgba(255, 235, 59, .1);
+}
+
+/* 12. Scroll reveal */
+.reveal-on-scroll {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity .65s ease, transform .65s ease;
+}
+
+.reveal-on-scroll.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 13. Animations */
+@keyframes featuredTextEnter {
+  from {
+    opacity: 0;
+    transform: translateX(-18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes featuredPosterEnter {
+  from {
+    opacity: 0;
+    transform: translateX(18px) scale(.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes posterFloat {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -6px; }
+}
+
+@keyframes featuredLightPass {
+  0%, 100% { background-position: 100% 0; }
+  50% { background-position: 0 0; }
+}
+
+@keyframes menuPopIn {
+  from {
+    opacity: 0;
+    transform: translateY(-7px) scale(.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* 14. Responsive tablet and mobile */
+@media (max-width: 768px) {
+  .featured {
+    flex-direction: column;
+    gap: 18px;
+    padding: 38px 18px;
+    text-align: center;
+    border-radius: 12px;
+  }
+
+  .featured-content h1 {
+    font-size: clamp(27px, 7vw, 36px);
+  }
+
+  .featured-content p {
+    margin-right: auto;
+    margin-left: auto;
+  }
+
+  .featured-info {
+    justify-content: center;
+    gap: 10px;
+    font-size: 14px;
+  }
+
+  .featured-poster {
+    width: 250px;
+    max-width: 100%;
+    height: 350px;
+    margin-top: 10px;
+  }
+
+  .watch-history-section,
+  .top10-section,
+  .all-anime-section {
+    padding: 30px 15px;
+  }
+
+  .watch-history-section h2,
+  .top10-section h2,
+  .all-anime-section h2 {
+    font-size: 25px;
+  }
+
+  .anime-grid {
+    gap: 12px;
+  }
+
+  .anime-card img {
+    height: auto;
+    aspect-ratio: 3 / 4;
+  }
+
+  /* Mobile navbar */
+  .navbar {
+    height: auto;
+    min-height: 0;
+    padding: 12px 0;
+  }
+
+  .navbar .container {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    width: 100%;
+    max-width: 100%;
+    padding: 0 12px;
+  }
+
+  .navbar .logo {
+    align-self: flex-start;
+    max-width: 100%;
+  }
+
+  .navbar .logo h2 {
+    font-size: clamp(20px, 5vw, 26px);
+    overflow-wrap: anywhere;
+  }
+
+  .navbar .nav-links {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .navbar .nav-links > li {
+    min-width: 0;
+  }
+
+  .navbar .nav-links > li:nth-child(3) {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .navbar .search-box,
+  .navbar #searchInput {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .navbar .btn-login {
+    padding: 9px 12px;
+    white-space: nowrap;
+  }
+
+  .navbar .menu-container {
+    justify-self: end;
+  }
+
+  .navbar #moreMenu {
+    right: 0;
+    max-width: calc(100vw - 24px);
+  }
+
+  .genre-sidebar button:hover,
+  #genreSidebar button:hover,
+  .genre-btn:hover {
+    transform: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .anime-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .anime-card {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .anime-card img {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+  }
+
+  .anime-card h3,
+  .anime-card h4 {
+    padding: 10px;
+    font-size: 14px;
+  }
+
+  .anime-card p {
+    padding: 0 10px 10px;
+    font-size: 12px;
+  }
+
+  .top10-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .genre-content {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .genre-sidebar,
+  #genreSidebar {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .genre-sidebar {
+    padding: 10px;
+  }
+
+  .genre-btn,
+  .genre-sidebar button,
+  #genreSidebar button {
+    padding: 9px 7px;
+    font-size: 13px;
+  }
+
+  #genreAnimeResults {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .featured-info {
+    gap: 10px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 420px) {
+  .navbar .container {
+    gap: 9px;
+  }
+
+  .navbar .nav-links {
+    column-gap: 7px;
+  }
+
+  .navbar .nav-links a {
+    font-size: 14px;
+  }
+
+  .navbar .btn-login {
+    padding: 8px 9px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 380px) {
+  .navbar .nav-links {
+    column-gap: 6px;
+  }
+}
+
+/* 15. Touch devices: avoid sticky hover effects */
+@media (hover: none) {
+  .anime-card:hover,
+  .anime-item:hover,
+  .movie-card:hover,
+  .top10-item:hover {
+    transform: none;
+  }
+
+  .anime-card:hover img,
+  .anime-item:hover img,
+  .movie-card:hover img,
+  .top10-item:hover img {
+    transform: none;
+    filter: none;
+  }
+
+  .featured-poster:hover {
+    transform: none;
+  }
+}
+
+/* 16. Accessibility: respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .reveal-on-scroll {
+    opacity: 1;
+    transform: none;
+  }
+
+  .featured::before {
+    animation: none !important;
+  }
+}

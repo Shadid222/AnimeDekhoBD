@@ -1,0 +1,381 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>AnimeDekho - Watch Anime Online</title>
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- SEE ALL BUTTON STYLES -->
+  <style>
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .section-header h2 {
+      margin: 0;
+    }
+
+    .see-all-btn {
+      flex-shrink: 0;
+      padding: 8px 16px;
+      border: 1px solid #e50914;
+      border-radius: 6px;
+      background: transparent;
+      color: #e50914;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .see-all-btn:hover {
+      background: #e50914;
+      color: #fff;
+    }
+
+    /* ALL ANIME: initially show 8 cards */
+    #allAnime:not(.show-all) > :nth-child(n+9) {
+      display: none;
+    }
+
+    /* MOVIES: initially show 8 cards */
+    #animeMovies:not(.show-all) > :nth-child(n+9) {
+      display: none;
+    }
+
+    /* TOP 10: initially show 5 items */
+    #topSeries:not(.show-all) > :nth-child(n+6) {
+      display: none;
+    }
+
+    /* CONTINUE WATCHING: initially show 4 items */
+    #watchHistory:not(.show-all) > :nth-child(n+5) {
+      display: none;
+    }
+
+    .see-all-btn[hidden] {
+      display: none;
+    }
+    
+    .menu-container {
+      position: relative;
+    }
+
+    #moreMenuBtn {
+      background: transparent;
+      color: inherit;
+      border: none;
+      border-radius: 6px;
+      padding: 4px 12px;
+      font-size: 28px;
+      cursor: pointer;
+    }
+
+    #moreMenuBtn:hover {
+      background: rgba(128, 128, 128, 0.15);
+    }
+
+    #moreMenu {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      min-width: 190px;
+      padding: 8px;
+      border-radius: 8px;
+      background: #181818;
+      border: 1px solid #383838;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      z-index: 1000;
+    }
+
+    #moreMenu a {
+      display: block;
+      padding: 10px 12px;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 5px;
+      white-space: nowrap;
+    }
+
+    #moreMenu a:hover {
+      background: #333;
+    }
+
+    #moreMenu[hidden],
+    #adminPanelLink[hidden] {
+      display: none !important;
+    }
+    
+/* Genre list: hidden until Show All is clicked */
+#genreSidebar {
+  display: none;
+}
+
+#genreSidebar.genres-visible {
+  display: block;
+}
+
+
+  </style>
+</head>
+
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="container">
+      <div class="logo">
+        <h2>🎬 AnimeDekhoBD</h2>
+      </div>
+
+      <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="#anime-section">Anime</a></li>
+
+        <li>
+          <input
+            type="text"
+            class="search-box"
+            id="searchInput"
+            placeholder="Search..."
+          >
+        </li>
+
+        <li>
+          <button class="btn-login" onclick="checkLogin()">
+            <span id="userDisplay">Login</span>
+          </button>
+        </li>
+        
+        <li class="menu-container">
+          <button
+            type="button"
+            id="moreMenuBtn"
+            aria-label="More options"
+            aria-expanded="false"
+            aria-controls="moreMenu"
+          >
+            ⋮
+          </button>
+
+          <div id="moreMenu" hidden>
+            <a href="profile.html">👤 My Profile</a>
+            <a href="watchlist.html">❤️ My Watchlist</a>
+            <a href="settings.html">⚙️ Settings</a>
+            <a href="admin-dashboard.html" id="adminPanelLink" hidden>
+              🛡️ Admin Panel
+            </a>
+          </div>
+        </li>
+
+      </ul>
+
+    </div>
+  </nav>
+
+
+  <!-- FEATURED SECTION -->
+  <section class="featured">
+    <div class="featured-content">
+      <h1 id="featured-title">Loading...</h1>
+      <p id="featured-desc">...</p>
+
+      <div class="featured-info">
+        <span id="featured-rating">⭐ 0</span>
+        <span id="featured-year">2021</span>
+        <span id="featured-duration">24m</span>
+      </div>
+
+      <button class="btn-watch" onclick="watchAnime()">
+        ▶ Watch Series
+      </button>
+    </div>
+
+    <img
+      id="featured-poster"
+      src=""
+      alt="Featured Anime"
+      class="featured-poster"
+    >
+  </section>
+  
+
+<!-- GENRE SIDEBAR SECTION -->
+<section class="genre-layout">
+
+  <div class="section-header">
+    <h2>Anime Genres</h2>
+
+    <button
+      type="button"
+      id="toggleGenres"
+      class="see-all-btn"
+      aria-expanded="false"
+      aria-controls="genreSidebar"
+    >
+      Show All ▼
+    </button>
+  </div>
+
+
+  <div class="genre-content">
+
+    <aside id="genreSidebar" class="genre-sidebar">
+      <h3>Anime Genres</h3>
+
+      <button type="button" class="genre-btn active" data-genre="All">All Anime</button>
+      <button type="button" class="genre-btn" data-genre="Action">Action</button>
+      <button type="button" class="genre-btn" data-genre="Adventure">Adventure</button>
+      <button type="button" class="genre-btn" data-genre="Romance">Romance</button>
+      <button type="button" class="genre-btn" data-genre="Comedy">Comedy</button>
+      <button type="button" class="genre-btn" data-genre="Drama">Drama</button>
+      <button type="button" class="genre-btn" data-genre="Fantasy">Fantasy</button>
+      <button type="button" class="genre-btn" data-genre="Isekai">Isekai</button>
+      <button type="button" class="genre-btn" data-genre="Horror">Horror</button>
+      <button type="button" class="genre-btn" data-genre="Mystery">Mystery</button>
+      <button type="button" class="genre-btn" data-genre="School">School</button>
+      <button type="button" class="genre-btn" data-genre="Sci-Fi">Sci-Fi</button>
+    </aside>
+
+    
+<div class="genre-results">
+  <h2 id="genreTitle">All Anime</h2>
+
+  <div id="genreAnimeResults" class="anime-grid"></div>
+
+  <p id="genreMessage">Choose a genre to explore anime.</p>
+</div>
+
+
+  </div>
+</section>
+
+  
+
+
+  <!-- CONTINUE WATCHING -->
+  <section class="watch-history-section">
+    <div class="section-header">
+      <h2>📺 Continue Watching</h2>
+
+      <button
+        type="button"
+        class="see-all-btn"
+        data-target="watchHistory"
+        onclick="toggleSeeAll(this)"
+      >
+        See All
+      </button>
+    </div>
+
+    <div class="anime-grid" id="watchHistory">
+      <p>Loading...</p>
+    </div>
+  </section>
+
+
+  <!-- ALL ANIME -->
+  <section class="all-anime-section" id="anime-section">
+    <div class="section-header">
+      <h2>📺 All Anime</h2>
+
+      <button
+        type="button"
+        class="see-all-btn"
+        data-target="allAnime"
+        onclick="toggleSeeAll(this)"
+      >
+        See All
+      </button>
+    </div>
+
+    <div class="anime-grid" id="allAnime">
+      <p>Loading...</p>
+    </div>
+  </section>
+
+
+  <!-- TOP 10 SERIES -->
+  <section class="top10-section">
+    <div class="section-header">
+      <h2>🏆 Top 10 Series Today</h2>
+
+      <button
+        type="button"
+        class="see-all-btn"
+        data-target="topSeries"
+        onclick="toggleSeeAll(this)"
+      >
+        See All
+      </button>
+    </div>
+
+    <div class="top10-grid" id="topSeries">
+      <p>Loading...</p>
+    </div>
+  </section>
+
+
+  <!-- ANIME MOVIES -->
+  <section class="all-anime-section" id="movies-section">
+    <div class="section-header">
+      <h2>🎬 Anime Movies</h2>
+
+      <button
+        type="button"
+        class="see-all-btn"
+        data-target="animeMovies"
+        onclick="toggleSeeAll(this)"
+      >
+        See All
+      </button>
+    </div>
+
+    <div class="anime-grid" id="animeMovies">
+      <p>Loading movies...</p>
+    </div>
+  </section>
+
+
+  <!-- FOOTER -->
+  <footer>
+    <p>&copy; 2024 AnimeDekho. All rights reserved.</p>
+  </footer>
+
+
+  <!-- JAVASCRIPT FILES -->
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/script.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const menuButton = document.getElementById('moreMenuBtn');
+  const menu = document.getElementById('moreMenu');
+
+  if (!menuButton || !menu) return;
+
+  menuButton.addEventListener('click', () => {
+    const isOpen = menu.hidden;
+
+    menu.hidden = !isOpen;
+    menuButton.setAttribute('aria-expanded', String(isOpen));
+  });
+
+  document.addEventListener('click', (event) => {
+    if (!event.target.closest('.menu-container')) {
+      menu.hidden = true;
+      menuButton.setAttribute('aria-expanded', 'false');
+    }
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,173 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AnimeDekhoBD | Admin Login</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      color: #f8fafc;
+      background:
+        radial-gradient(ellipse at 15% 10%, #35216b, transparent 40%),
+        radial-gradient(ellipse at 90% 90%, #401747, transparent 38%),
+        #080b16;
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 420px;
+      padding: 30px;
+      border: 1px solid rgba(167,139,250,.3);
+      border-radius: 20px;
+      background: rgba(20,25,45,.92);
+      box-shadow: 0 20px 65px #0007;
+      animation: appear .5s ease both;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 30px;
+      color: #c4b5fd;
+    }
+
+    p {
+      color: #a6b0c7;
+      line-height: 1.5;
+    }
+
+    input, button {
+      width: 100%;
+      margin-top: 13px;
+      padding: 13px;
+      border-radius: 9px;
+      font-size: 15px;
+    }
+
+    input {
+      color: white;
+      background: #0b1020;
+      border: 1px solid #39415c;
+      outline: none;
+    }
+
+    input:focus { border-color: #a78bfa; }
+
+    button {
+      border: 0;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      background: linear-gradient(100deg, #7c3aed, #c026d3);
+      transition: transform .2s;
+    }
+
+    button:hover { transform: translateY(-2px); }
+    button:disabled { opacity: .6; cursor: wait; }
+
+    .register-link {
+      margin-top: 20px;
+      text-align: center;
+      font-size: 13px;
+    }
+
+    a { color: #c4b5fd; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    #message {
+      overflow-wrap: anywhere;
+      white-space: pre-wrap;
+      font-size: 14px;
+    }
+
+    @keyframes appear {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="login-card">
+    <h1>AnimeDekhoBD</h1>
+    <p>Admin Portal · Sign in to manage your website.</p>
+
+    <form id="loginForm">
+      <input id="loginEmail" type="email"
+        placeholder="Admin email" autocomplete="username" required>
+
+      <input id="loginPassword" type="password"
+        placeholder="Admin password" autocomplete="current-password" required>
+
+      <button id="loginButton" type="submit">Login to Dashboard</button>
+    </form>
+
+    <p class="register-link">
+      New admin? <a href="admin-register.html">Register here</a>
+    </p>
+
+    <p id="message" role="status">Please log in as an administrator.</p>
+  </main>
+
+  <script>
+    const API = 'http://localhost:5000/api';
+    const form = document.getElementById('loginForm');
+    const message = document.getElementById('message');
+    const button = document.getElementById('loginButton');
+
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      button.disabled = true;
+      message.textContent = 'Checking admin credentials...';
+
+      try {
+        const loginResponse = await fetch(`${API}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: document.getElementById('loginEmail').value.trim(),
+            password: document.getElementById('loginPassword').value
+          })
+        });
+
+        const loginData = await loginResponse.json().catch(() => ({}));
+
+        if (!loginResponse.ok || !loginData.token) {
+          throw new Error(loginData.error || loginData.message || 'Login failed.');
+        }
+
+        const profileResponse = await fetch(`${API}/auth/me`, {
+          headers: { Authorization: `Bearer ${loginData.token}` }
+        });
+
+        const user = await profileResponse.json().catch(() => ({}));
+
+        if (!profileResponse.ok || user.role !== 'admin') {
+          throw new Error('Access denied. Admin account required.');
+        }
+
+        sessionStorage.setItem('adminToken', loginData.token);
+        window.location.href = 'admin-home.html';
+      } catch (error) {
+        message.textContent = error.message;
+      } finally {
+        button.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
