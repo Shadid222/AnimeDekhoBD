@@ -1388,7 +1388,7 @@ body.light-mode .toast { background:#fff;color:#152039; }
 
 'use strict';
 
-const API = 'http\://localhost:5000/api';
+const API = 'https://animedekhobd.onrender.com/api';
 
 const token = sessionStorage.getItem('adminToken');
 
@@ -2832,6 +2832,7 @@ function renderActivity() {
     row.append(icon, copy);
     list.appendChild(row);
   });
+  
 }
 function renderStatusChart() {
   const target = document.getElementById('statusChart');

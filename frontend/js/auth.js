@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (!adminLink || !token) return;
 
   try {
-    const response = await fetch('http://localhost:5000/api/auth/me', {
+    const response = await fetch('https://animedekhobd.onrender.com/api/auth/me', {
       headers: {
         Authorization: `Bearer ${token}`
       }
