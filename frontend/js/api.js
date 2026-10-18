@@ -5,7 +5,7 @@
    Continue Watching and Movies
 ========================================================= */
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = 'https://animedekhobd.onrender.com/api';
 
 let allAnimeData = [];
 let allMovieData = [];
