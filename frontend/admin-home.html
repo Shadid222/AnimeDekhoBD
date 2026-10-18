@@ -1,885 +1,1583 @@
 
+
 <!DOCTYPE html>
+
 <html lang="en">
+
 <head>
+
   <meta charset="UTF-8">
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <meta name="theme-color" content="#0b1020">
+
   <title>AnimeDekho | Admin Dashboard</title>
 
   <style>
+
     :root {
+
       --bg: #0b1020;
+
       --panel: #121a2d;
+
       --card: #182238;
+
       --input: #0d1527;
+
       --border: #293650;
+
       --text: #f1f5f9;
+
       --muted: #94a3b8;
+
       --primary: #7c5cff;
+
       --primary-hover: #6845ee;
+
       --danger: #ef4444;
+
       --success: #22c55e;
+
       --warning: #f59e0b;
+
     }
 
     * { box-sizing: border-box; }
 
     body {
+
       margin: 0;
+
       background: var(--bg);
+
       color: var(--text);
+
       font-family: "Segoe UI", Arial, sans-serif;
+
       line-height: 1.6;
+
     }
 
     button, input, select, textarea { font: inherit; }
 
     button {
+
       border: 0;
+
       border-radius: 9px;
+
       padding: 10px 14px;
+
       color: white;
+
       background: var(--primary);
+
       cursor: pointer;
+
       font-weight: 600;
+
       transition: background .2s, transform .2s;
+
     }
 
     button:hover {
+
       background: var(--primary-hover);
+
       transform: translateY(-1px);
+
     }
 
     button:disabled {
+
       opacity: .55;
+
       cursor: not-allowed;
+
       transform: none;
+
     }
 
     button.danger { background: #b91c1c; }
+
     button.danger:hover { background: #dc2626; }
+
     button.secondary { background: #334155; }
+
     button.secondary:hover { background: #475569; }
 
     input, select, textarea {
+
       width: 100%;
+
       min-width: 0;
+
       padding: 11px 12px;
+
       margin-top: 6px;
+
       margin-bottom: 14px;
+
       border: 1px solid var(--border);
+
       border-radius: 9px;
+
       outline: none;
+
       color: var(--text);
+
       background: var(--input);
+
     }
 
     input:focus, select:focus, textarea:focus {
+
       border-color: var(--primary);
+
       box-shadow: 0 0 0 2px #7c5cff30;
+
     }
 
     textarea {
+
       min-height: 100px;
+
       resize: vertical;
+
     }
 
     label {
+
       display: block;
+
       color: #cbd5e1;
+
       font-size: 14px;
+
       font-weight: 600;
+
     }
 
     a { color: #a5b4fc; }
 
     .app {
+
       display: grid;
+
       grid-template-columns: 245px minmax(0, 1fr);
+
       min-height: 100vh;
+
     }
 
     .sidebar {
+
       position: sticky;
+
       top: 0;
+
       height: 100vh;
+
       overflow-y: auto;
+
       padding: 24px 16px;
+
       background: #0e1628;
+
       border-right: 1px solid var(--border);
+
     }
 
     .brand {
+
       display: flex;
+
       gap: 11px;
+
       align-items: center;
+
       padding: 0 8px 26px;
+
       font-size: 19px;
+
       font-weight: 800;
+
     }
 
     .brand-mark {
+
       display: grid;
+
       place-items: center;
+
       width: 40px;
+
       height: 40px;
+
       border-radius: 12px;
+
       background: linear-gradient(135deg, #7c5cff, #36bffa);
+
     }
 
     .nav-label {
+
       margin: 14px 10px 8px;
+
       color: #71809b;
+
       font-size: 11px;
+
       font-weight: 800;
+
       letter-spacing: 1.4px;
+
       text-transform: uppercase;
+
     }
 
     .nav-link {
+
       display: block;
+
       width: 100%;
+
       margin: 5px 0;
+
       padding: 11px 12px;
+
       text-align: left;
+
       color: #b9c5d9;
+
       background: transparent;
+
       text-decoration: none;
+
       border-radius: 9px;
+
       font-weight: 500;
+
     }
 
     .nav-link:hover, .nav-link.active {
+
       color: white;
+
       background: #7c5cff22;
+
     }
 
     .sidebar-bottom {
+
       margin-top: 30px;
+
       padding: 14px;
+
       border: 1px solid var(--border);
+
       border-radius: 12px;
+
       color: var(--muted);
+
       font-size: 13px;
+
     }
 
     .main {
+
       min-width: 0;
+
       padding: 28px;
+
     }
 
     .topbar {
+
       display: flex;
+
       justify-content: space-between;
+
       align-items: center;
+
       gap: 18px;
+
       margin-bottom: 26px;
+
     }
 
     h1, h2, h3, p { margin-top: 0; }
+
     h1 { margin-bottom: 5px; font-size: clamp(24px, 3vw, 32px); }
+
     h2 { font-size: 19px; margin-bottom: 8px; }
+
     h3 { font-size: 16px; margin-bottom: 10px; }
 
     .muted { color: var(--muted); font-size: 13px; }
+
     .top-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
     .message {
+
       display: none;
+
       margin-bottom: 20px;
+
       padding: 13px 16px;
+
       border: 1px solid var(--border);
+
       border-radius: 10px;
+
       white-space: pre-wrap;
+
       overflow-wrap: anywhere;
+
     }
 
     .message.visible { display: block; }
+
     .message.success { color: #bbf7d0; border-color: #166534; background: #14532d30; }
+
     .message.error { color: #fecaca; border-color: #991b1b; background: #7f1d1d30; }
+
     .message.info { color: #bfdbfe; border-color: #1d4ed8; background: #1e3a8a30; }
 
     .stats {
+
       display: grid;
+
       grid-template-columns: repeat(3, minmax(0, 1fr));
+
       gap: 16px;
+
       margin-bottom: 24px;
+
     }
 
     .stat-card {
+
       padding: 20px;
+
       border: 1px solid var(--border);
+
       border-radius: 15px;
+
       background: var(--panel);
+
     }
 
     .stat-card .stat-value {
+
       margin: 8px 0 2px;
+
       font-size: 30px;
+
       font-weight: 800;
+
     }
 
     .stat-card .stat-label { color: var(--muted); font-size: 13px; }
 
     .panel {
+
       margin-bottom: 22px;
+
       padding: 22px;
+
       border: 1px solid var(--border);
+
       border-radius: 15px;
+
       background: var(--panel);
+
       scroll-margin-top: 20px;
+
     }
 
     .panel-heading {
+
       display: flex;
+
       align-items: flex-start;
+
       justify-content: space-between;
+
       gap: 15px;
+
       margin-bottom: 18px;
+
     }
 
     .form-grid {
+
       display: grid;
+
       grid-template-columns: repeat(2, minmax(0, 1fr));
+
       gap: 0 16px;
+
     }
 
     .full-width { grid-column: 1 / -1; }
 
     .form-actions {
+
       display: flex;
+
       align-items: center;
+
       gap: 9px;
+
       flex-wrap: wrap;
+
     }
 
     .search-row {
+
       display: grid;
+
       grid-template-columns: minmax(0, 1fr) 190px;
+
       gap: 12px;
+
     }
 
     .search-row input, .search-row select { margin-bottom: 12px; }
 
     .anime-grid {
+
       display: grid;
+
       grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+
       gap: 15px;
+
     }
 
     .anime-card {
+
       min-width: 0;
+
       overflow: hidden;
+
       border: 1px solid var(--border);
+
       border-radius: 12px;
+
       background: var(--card);
+
     }
 
     .poster {
+
       display: grid;
+
       place-items: center;
+
       height: 180px;
+
       overflow: hidden;
+
       background: #0b1325;
+
       color: var(--muted);
+
     }
 
     .poster img {
+
       width: 100%;
+
       height: 100%;
+
       object-fit: cover;
+
     }
 
     .anime-card-content { padding: 14px; }
+
     .anime-card-title { margin-bottom: 5px; font-weight: 800; overflow-wrap: anywhere; }
+
     .anime-meta { color: var(--muted); font-size: 12px; margin-bottom: 12px; }
+
     .card-actions { display: flex; gap: 7px; flex-wrap: wrap; }
+
     .card-actions button { flex: 1; }
 
     .item {
+
       padding: 15px;
+
       margin: 10px 0;
+
       border: 1px solid var(--border);
+
       border-radius: 11px;
+
       background: var(--card);
+
       overflow-wrap: anywhere;
+
     }
 
     .item-title { display: block; margin-bottom: 6px; }
+
     .item-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+
     .item-actions button { margin: 0; }
 
     .inline-grid {
+
       display: grid;
+
       grid-template-columns: repeat(2, minmax(0, 1fr));
+
       gap: 0 16px;
+
     }
 
     .status-badge {
+
       display: inline-block;
+
       padding: 3px 8px;
+
       border-radius: 20px;
+
       color: #c4b5fd;
+
       background: #7c5cff20;
+
       font-size: 11px;
+
     }
 
     .poster-preview {
+
       display: none;
+
       width: 120px;
+
       max-height: 170px;
+
       object-fit: cover;
+
       margin: 0 0 14px;
+
       border: 1px solid var(--border);
+
       border-radius: 9px;
+
     }
 
     .poster-preview.visible { display: block; }
 
     .empty {
+
       padding: 22px;
+
       border: 1px dashed var(--border);
+
       border-radius: 10px;
+
       color: var(--muted);
+
       text-align: center;
+
     }
 
     .warning {
+
       padding: 12px;
+
       border: 1px solid #854d0e;
+
       border-radius: 9px;
+
       background: #78350f25;
+
       color: #fde68a;
+
       font-size: 13px;
+
     }
 
     .section-hidden { display: none; }
 
     @media (max-width: 950px) {
+
       .app { grid-template-columns: 190px minmax(0, 1fr); }
+
       .main { padding: 20px; }
+
       .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
     }
 
     @media (max-width: 680px) {
+
       .app { display: block; }
+
       .sidebar {
+
         position: static;
+
         width: 100%;
+
         height: auto;
+
         padding: 14px;
+
         border-right: 0;
+
         border-bottom: 1px solid var(--border);
+
       }
+
       .brand { padding-bottom: 12px; }
+
       .nav-label, .sidebar-bottom { display: none; }
+
       .nav-links {
+
         display: flex;
+
         gap: 6px;
+
         overflow-x: auto;
+
       }
+
       .nav-link {
+
         width: auto;
+
         min-width: max-content;
+
         margin: 0;
+
         padding: 9px 11px;
+
       }
+
       .main { padding: 15px; }
+
       .topbar { align-items: flex-start; flex-direction: column; }
+
       .stats { grid-template-columns: 1fr; gap: 10px; }
+
       .stat-card { padding: 15px; }
+
       .stat-card .stat-value { font-size: 25px; }
+
       .panel { padding: 15px; }
+
       .form-grid, .inline-grid, .search-row { grid-template-columns: 1fr; }
+
       .full-width { grid-column: auto; }
+
       .anime-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+
       .poster { height: 150px; }
+
     }
-  </style>
+
+  
+/* === AnimeDekho Neon Futuristic Upgrade === */
+:root { color-scheme: dark; --glow: #8b5cf6; --cyan: #22d3ee; --surface-glow: 0 0 0 1px #8b5cf622, 0 12px 40px #02061755; }
+body { background: radial-gradient(ellipse at 15% 0%, #33216b55 0, transparent 35%), radial-gradient(ellipse at 90% 10%, #07598530 0, transparent 30%), var(--bg); }
+body::before { content:""; position:fixed; inset:0; pointer-events:none; opacity:.13; z-index:-1; background-image:linear-gradient(#64748b22 1px,transparent 1px),linear-gradient(90deg,#64748b22 1px,transparent 1px); background-size:34px 34px; mask-image:linear-gradient(to bottom,black,transparent 85%); }
+.sidebar { background:linear-gradient(180deg,#10182cF5,#0b1020F2); backdrop-filter:blur(18px); }
+.brand-mark { box-shadow:0 0 24px #7c5cff70; animation:brandPulse 4s ease-in-out infinite; }
+.nav-link { border:1px solid transparent; transition:background .22s,border-color .22s,transform .22s,color .22s; }
+.nav-link:hover { transform:translateX(3px); border-color:#8b5cf633; }
+.stat-card,.panel,.anime-card,.item { box-shadow:var(--surface-glow); transition:transform .25s,border-color .25s,box-shadow .25s,background .25s; }
+.stat-card { position:relative; overflow:hidden; background:linear-gradient(145deg,#18243d,#111a2d); }
+.stat-card::after { content:""; position:absolute; width:130px;height:130px;right:-55px;top:-65px;border-radius:50%;background:#8b5cf625;filter:blur(5px); }
+.stat-card:hover,.anime-card:hover,.item:hover { transform:translateY(-4px); border-color:#8b5cf688; box-shadow:0 0 0 1px #8b5cf622,0 16px 45px #02061777; }
+.panel { background:linear-gradient(145deg,#121b30ee,#101729ee); backdrop-filter:blur(14px); }
+button { box-shadow:0 5px 18px #7c5cff20; }
+button:focus-visible,.nav-link:focus-visible { outline:2px solid var(--cyan);outline-offset:3px; }
+.top-actions { align-items:center; }
+.icon-btn { display:inline-flex; align-items:center; gap:8px; border:1px solid var(--border); background:#182238; color:var(--text); }
+.icon-btn:hover { background:#25324d; }
+.live-pill { display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid #22c55e44;border-radius:999px;background:#22c55e12;color:#86efac;font-size:12px;font-weight:700; }
+.live-dot { width:7px;height:7px;border-radius:50%;background:#4ade80;box-shadow:0 0 12px #4ade80;animation:dotPulse 1.8s infinite; }
+.analytics-grid { display:grid;grid-template-columns:minmax(0,1.4fr) minmax(240px,1fr);gap:16px;margin-bottom:22px; }
+.chart-panel,.activity-panel { min-width:0;padding:22px;border:1px solid var(--border);border-radius:15px;background:linear-gradient(145deg,#121b30ee,#101729ee);box-shadow:var(--surface-glow); }
+.chart-head { display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px; }
+.chart-legend { display:flex;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:12px; }
+.legend-dot { display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;background:var(--primary); }
+.chart-wrap { width:100%;min-height:190px; }
+.chart-wrap svg { display:block;width:100%;height:auto;overflow:visible; }
+.activity-list { display:grid;gap:10px;max-height:250px;overflow:auto; }
+.activity-entry { display:flex;gap:10px;align-items:flex-start;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--card);animation:fadeUp .35s ease both; }
+.activity-icon { display:grid;place-items:center;flex:0 0 30px;width:30px;height:30px;border-radius:9px;background:#7c5cff22;color:#c4b5fd;font-weight:800; }
+.activity-copy { min-width:0;overflow-wrap:anywhere;font-size:13px; }
+.activity-time { color:var(--muted);font-size:11px;margin-top:2px; }
+.empty-activity { padding:20px 10px;color:var(--muted);text-align:center;font-size:13px; }
+.toast-stack { position:fixed;right:18px;bottom:18px;z-index:9999;display:grid;gap:9px;width:min(360px,calc(100vw - 36px));pointer-events:none; }
+.toast { padding:12px 14px;border:1px solid #8b5cf655;border-radius:12px;background:#111a2df2;box-shadow:0 15px 45px #0008;backdrop-filter:blur(15px);animation:fadeUp .25s ease both;font-size:13px; }
+.toast.error { border-color:#ef444477; }.toast.success { border-color:#22c55e77; }
+body.light-mode { color-scheme:light;--bg:#f3f6fc;--panel:#ffffff;--card:#f8faff;--input:#ffffff;--border:#d9e1ef;--text:#152039;--muted:#64748b;--primary:#6d4aff;--primary-hover:#5838e6; background:radial-gradient(ellipse at 15% 0%,#c4b5fd55 0,transparent 35%),radial-gradient(ellipse at 90% 10%,#67e8f955 0,transparent 30%),var(--bg); }
+body.light-mode .sidebar { background:#ffffffed; }
+body.light-mode .panel,body.light-mode .chart-panel,body.light-mode .activity-panel { background:#ffffffed; }
+body.light-mode .stat-card { background:linear-gradient(145deg,#fff,#f1f5ff); }
+body.light-mode .icon-btn { background:#fff;color:var(--text); }
+body.light-mode .activity-entry { background:#f8faff; }
+body.light-mode .toast { background:#fff;color:#152039; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)} }
+@keyframes brandPulse { 0%,100%{box-shadow:0 0 16px #7c5cff45}50%{box-shadow:0 0 30px #22d3ee55} }
+@keyframes dotPulse { 0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.75)} }
+@media(max-width:850px){.analytics-grid{grid-template-columns:1fr}.chart-panel,.activity-panel{padding:17px}}
+@media(max-width:680px){.top-actions{width:100%}.top-actions button{flex:1}.live-pill{order:-1}.analytics-grid{gap:10px}.chart-panel,.activity-panel{padding:14px}.stat-card:hover,.anime-card:hover,.item:hover{transform:none}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
+
+</style>
+
 </head>
 
 <body>
+
 <div class="app">
+
   <aside class="sidebar">
+
     <div class="brand">
+
       <span class="brand-mark">A</span>
+
       <span>AnimeDekho</span>
+
     </div>
 
     <div class="nav-label">Workspace</div>
+
     <nav class="nav-links">
+
       <button type="button" class="nav-link active" data-target="overview">Overview</button>
+
       <button type="button" class="nav-link" data-target="animeManagement">Anime Library</button>
+
       <button type="button" class="nav-link" data-target="seasonManagement">Seasons</button>
+
       <button type="button" class="nav-link" data-target="episodeManagement">Episodes</button>
+
     </nav>
 
     <div class="sidebar-bottom">
+
       <strong>Admin Workspace</strong>
+
       <p style="margin:6px 0 0">Manage your anime catalog, seasons and episodes.</p>
+
     </div>
+
   </aside>
 
   <main class="main">
+
     <header class="topbar" id="overview">
+
       <div>
+
         <h1>Admin Dashboard</h1>
+
         <p class="muted">Manage your AnimeDekho content in one place.</p>
+
       </div>
+
       <div class="top-actions">
-        <button type="button" class="secondary" id="refreshBtn">Refresh Data</button>
+
+        <span class="live-pill"><span class="live-dot"></span> SYSTEM READY</span>
+<button type="button" class="icon-btn" id="themeBtn" aria-label="Toggle color theme">☼ Theme</button>
+<button type="button" class="icon-btn" id="notificationBtn" aria-label="Show recent activity">♧ Activity</button>
+<button type="button" class="secondary" id="refreshBtn">↻ Refresh Data</button>
+
         <button type="button" class="danger" id="logoutBtn">Logout</button>
+
       </div>
+
     </header>
 
     <div id="message" class="message" role="status" aria-live="polite"></div>
 
     <section class="stats">
+
       <div class="stat-card">
+
         <div class="stat-label">Total Anime</div>
+
         <div class="stat-value" id="totalAnime">—</div>
+
         <div class="muted">Anime in your catalog</div>
+
       </div>
+
       <div class="stat-card">
+
         <div class="stat-label">Selected Anime</div>
+
         <div class="stat-value" id="selectedAnimeStat">—</div>
+
         <div class="muted">Current selection</div>
+
       </div>
+
       <div class="stat-card">
+
         <div class="stat-label">Selected Season</div>
+
         <div class="stat-value" id="selectedSeasonStat">—</div>
+
         <div class="muted">Current selection</div>
+
       </div>
+
     </section>
 
-    
+
+<section class="analytics-grid" aria-label="Dashboard analytics">
+  <div class="chart-panel">
+    <div class="chart-head">
+      <div><h2>Catalog Pulse</h2><p class="muted">Anime status distribution · based on loaded catalog</p></div>
+      <span class="status-badge" id="chartTotal">0 titles</span>
+    </div>
+    <div class="chart-legend">
+      <span><i class="legend-dot" style="background:#8b5cf6"></i>Ongoing</span>
+      <span><i class="legend-dot" style="background:#22d3ee"></i>Completed</span>
+      <span><i class="legend-dot" style="background:#f59e0b"></i>Upcoming</span>
+    </div>
+    <div class="chart-wrap" id="statusChart" role="img" aria-label="Anime status distribution chart">
+      <div class="empty">Chart will appear when catalog data loads.</div>
+    </div>
+  </div>
+  <div class="activity-panel" id="activityPanel">
+    <div class="chart-head"><div><h2>Activity Stream</h2><p class="muted">Recent dashboard events</p></div><span class="status-badge" id="activityCount">0 events</span></div>
+    <div class="activity-list" id="activityList"><div class="empty-activity">Waiting for dashboard activity…</div></div>
+  </div>
+</section>
+
     <!-- ANIME MANAGEMENT -->
+
     <section class="panel" id="animeManagement">
 
       <div class="panel-heading">
+
         <div>
+
           <h2>Anime Library</h2>
+
           <p class="muted">Search, view, add and manage your anime catalog.</p>
+
         </div>
+
       </div>
 
       <!-- 1. SEARCH AND FILTER: TOP -->
+
       <div class="search-row">
+
         <input
+
           id="animeSearch"
+
           placeholder="Search anime by title or genre..."
+
         >
 
         <select id="animeStatusFilter">
+
           <option value="">All statuses</option>
+
           <option value="Ongoing">Ongoing</option>
+
           <option value="Completed">Completed</option>
+
           <option value="Upcoming">Upcoming</option>
+
         </select>
+
       </div>
 
       <!-- 2. ANIME TEMPLATE / CARD LIST: ABOVE THE FORM -->
+
       <div id="animeList" class="anime-grid">
+
         <div class="empty">Loading anime...</div>
+
       </div>
 
       <hr style="border:0;border-top:1px solid var(--border);margin:28px 0">
 
       <!-- 3. ADD / EDIT ANIME FORM: BELOW THE CARD LIST -->
+
       <div class="panel-heading">
+
         <div>
+
           <h2 id="animeFormHeading">Add New Anime</h2>
+
           <p class="muted">
+
             Add a new anime or select Edit on a card to update its details.
+
           </p>
+
         </div>
+
       </div>
 
       <form id="animeForm">
+
         <input type="hidden" id="animeEditId">
 
         <div class="form-grid">
+
           <div>
+
             <label for="animeTitle">Anime Title *</label>
+
             <input
+
               id="animeTitle"
+
               required
+
               maxlength="200"
+
               placeholder="e.g. Attack on Titan"
+
             >
+
           </div>
 
           <div>
+
             <label for="animePoster">Poster Image URL</label>
+
             <input
+
               id="animePoster"
+
               type="url"
-              placeholder="https://example.com/poster.jpg"
+
+              placeholder="https\://example.com/poster.jpg"
+
             >
+
           </div>
 
           <div>
+
             <label for="animeYear">Release Year</label>
+
             <input
+
               id="animeYear"
+
               type="number"
+
               min="1900"
+
               max="2100"
+
               placeholder="2026"
+
             >
+
           </div>
 
           <div>
+
             <label for="animeRating">Rating (0–10)</label>
+
             <input
+
               id="animeRating"
+
               type="number"
+
               min="0"
+
               max="10"
+
               step="0.1"
+
               placeholder="8.5"
+
             >
+
           </div>
 
           <div>
+
             <label for="animeTotalEpisodes">Total Episodes</label>
+
             <input
+
               id="animeTotalEpisodes"
+
               type="number"
+
               min="0"
+
               placeholder="24"
+
             >
+
           </div>
+
                     <div>
+
             <label for="animeType">Content Type</label>
+
             <select id="animeType">
+
               <option value="Series">Anime Series</option>
+
               <option value="Movie">Anime Movie</option>
+
             </select>
+
           </div>
 
           <div>
+
             <label for="animeStatus">Status</label>
+
             <select id="animeStatus">
+
               <option value="Ongoing">Ongoing</option>
+
               <option value="Completed">Completed</option>
+
               <option value="Upcoming">Upcoming</option>
+
             </select>
+
           </div>
 
           <div class="full-width">
+
             <label for="animeGenre">Genres</label>
+
             <input
+
               id="animeGenre"
+
               placeholder="Action, Adventure, Fantasy"
+
             >
+
             <p class="muted">
+
               একাধিক Genre দিতে কমা ব্যবহার করো।
+
             </p>
+
           </div>
 
           <div class="full-width">
+
             <label for="animeDescription">Description / Synopsis</label>
+
             <textarea
+
               id="animeDescription"
+
               maxlength="10000"
+
               placeholder="Write the anime story or description..."
+
             ></textarea>
+
           </div>
+
         </div>
 
         <img
+
           id="posterPreview"
+
           class="poster-preview"
+
           alt="Poster preview"
+
         >
 
         <div class="form-actions">
+
           <button type="submit" id="saveAnimeBtn">Add Anime</button>
 
           <button
+
             type="button"
+
             class="secondary"
+
             id="cancelAnimeEditBtn"
+
             hidden
+
           >
+
             Cancel Edit
+
           </button>
+
         </div>
+
       </form>
 
     </section>
 
-
     <!-- SEASON MANAGEMENT -->
+
     <section class="panel" id="seasonManagement">
+
       <div class="panel-heading">
+
         <div>
+
           <h2>Season Management</h2>
+
           <p class="muted">Select an anime to view and manage its seasons.</p>
+
         </div>
+
       </div>
 
       <label for="animeSelect">Select Anime</label>
+
       <select id="animeSelect">
+
         <option value="">Loading anime...</option>
+
       </select>
 
       <button type="button" id="loadSeasonsBtn">Load Seasons</button>
 
       <form id="seasonForm" style="margin-top:20px">
+
         <h3>Add Season</h3>
+
         <div class="inline-grid">
+
           <div>
+
             <label for="seasonNumber">Season Number *</label>
+
             <input id="seasonNumber" type="number" min="1" required placeholder="1">
+
           </div>
+
           <div>
+
             <label for="seasonTitle">Season Title</label>
+
             <input id="seasonTitle" maxlength="200" placeholder="Season 1">
+
           </div>
+
         </div>
+
         <button type="submit">Add Season</button>
+
       </form>
 
       <h3 style="margin-top:22px">Seasons</h3>
+
       <div id="seasonsList"><div class="empty">Select an anime first.</div></div>
+
     </section>
 
     <!-- EPISODE MANAGEMENT -->
+
     <section class="panel" id="episodeManagement">
+
       <div class="panel-heading">
+
         <div>
+
           <h2>Episode Management</h2>
+
           <p class="muted">Add single episodes or add multiple episodes at once.</p>
+
         </div>
+
       </div>
 
       <label for="seasonSelect">Select Season</label>
+
       <select id="seasonSelect">
+
         <option value="">Select a season</option>
+
       </select>
 
       <form id="episodeForm" style="margin-top:20px">
+
         <h3>Add Episode</h3>
+
         <div class="inline-grid">
+
           <div>
+
             <label for="episodeNumber">Episode Number *</label>
+
             <input id="episodeNumber" type="number" min="1" required placeholder="1">
+
           </div>
+
           <div>
+
             <label for="episodeTitle">Episode Title</label>
+
             <input id="episodeTitle" maxlength="200" placeholder="Episode 1">
+
           </div>
+
         </div>
 
-       
 <label for="videoUrl">Default Video URL (Optional)</label>
-<input id="videoUrl" type="url" placeholder="https://example.com/episode.mp4">
+
+<input id="videoUrl" type="url" placeholder="https\://example.com/episode.mp4">
 
 <h3>English Dub Servers</h3>
+
 <div class="inline-grid">
+
   <div>
+
     <label for="englishServer1">English Server 1</label>
-    <input id="englishServer1" type="url" placeholder="https://...">
+
+    <input id="englishServer1" type="url" placeholder="https\://...">
+
   </div>
+
   <div>
+
     <label for="englishServer2">English Server 2</label>
-    <input id="englishServer2" type="url" placeholder="https://...">
+
+    <input id="englishServer2" type="url" placeholder="https\://...">
+
   </div>
+
   <div>
+
     <label for="englishServer3">English Server 3</label>
-    <input id="englishServer3" type="url" placeholder="https://...">
+
+    <input id="englishServer3" type="url" placeholder="https\://...">
+
   </div>
+
 </div>
 
 <h3>Hindi Dub Servers</h3>
+
 <div class="inline-grid">
+
   <div>
+
     <label for="hindiServer1">Hindi Server 1</label>
-    <input id="hindiServer1" type="url" placeholder="https://...">
+
+    <input id="hindiServer1" type="url" placeholder="https\://...">
+
   </div>
+
   <div>
+
     <label for="hindiServer2">Hindi Server 2</label>
-    <input id="hindiServer2" type="url" placeholder="https://...">
+
+    <input id="hindiServer2" type="url" placeholder="https\://...">
+
   </div>
+
   <div>
+
     <label for="hindiServer3">Hindi Server 3</label>
-    <input id="hindiServer3" type="url" placeholder="https://...">
+
+    <input id="hindiServer3" type="url" placeholder="https\://...">
+
   </div>
+
 </div>
 
 <h3>Bangla Dub Servers</h3>
+
 <div class="inline-grid">
+
   <div>
+
     <label for="banglaServer1">Bangla Server 1</label>
-    <input id="banglaServer1" type="url" placeholder="https://...">
+
+    <input id="banglaServer1" type="url" placeholder="https\://...">
+
   </div>
+
   <div>
+
     <label for="banglaServer2">Bangla Server 2</label>
-    <input id="banglaServer2" type="url" placeholder="https://...">
+
+    <input id="banglaServer2" type="url" placeholder="https\://...">
+
   </div>
+
   <div>
+
     <label for="banglaServer3">Bangla Server 3</label>
-    <input id="banglaServer3" type="url" placeholder="https://...">
+
+    <input id="banglaServer3" type="url" placeholder="https\://...">
+
   </div>
+
 </div>```
+
         <button type="submit">Add Episode</button>
+
       </form>
 
       <form id="bulkEpisodeForm" style="margin-top:24px">
+
         <h3>Bulk Add Episodes</h3>
+
         <p class="muted">প্রতি লাইনে লিখবে: Episode Number | Title | Video URL</p>
 
         <textarea id="bulkEpisodeData" rows="7" required
-          placeholder="1 | Episode 1 | https://example.com/ep1.mp4&#10;2 | Episode 2 | https://example.com/ep2.mp4"></textarea>
+
+          placeholder="1 | Episode 1 | https\://example.com/ep1.mp4&#10;2 | Episode 2 | https\://example.com/ep2.mp4"></textarea>
 
         <button type="submit">Add All Episodes</button>
+
       </form>
 
       <h3 style="margin-top:24px">Episodes in Selected Season</h3>
+
       <div id="episodeList"><div class="empty">Select a season first.</div></div>
 
       <hr style="border:0;border-top:1px solid var(--border);margin:24px 0">
 
       <div class="panel-heading">
+
         <div>
+
           <h3>Latest Episodes</h3>
+
           <p class="muted">Recently added episodes across your catalog.</p>
+
         </div>
+
         <button type="button" id="latestEpisodesBtn">Refresh</button>
+
       </div>
 
       <div id="latestEpisodesList"><div class="empty">Press Refresh to load latest episodes.</div></div>
+
     </section>
+
   </main>
+
 </div>
 
 <script>
+
 'use strict';
 
-const API = 'http://localhost:5000/api';
+const API = 'http\://localhost:5000/api';
+
 const token = sessionStorage.getItem('adminToken');
 
 const $ = id => document.getElementById(id);
 
 const message = $('message');
+
 const animeSearch = $('animeSearch');
+
 const animeSelect = $('animeSelect');
+
 const seasonSelect = $('seasonSelect');
+
 const episodeList = $('episodeList');
+
 const animeList = $('animeList');
 
 let allAnime = [];
+
 let messageTimer;
 
 function showMessage(text, type = 'info') {
+
   message.textContent = text;
+
   message.className = 'message visible ' + type;
 
   clearTimeout(messageTimer);
+
   messageTimer = setTimeout(() => {
+
     message.classList.remove('visible');
+
   }, 7000);
+
 }
 
 function getErrorMessage(error) {
+
   return error && error.message ? error.message : 'Something went wrong.';
+
 }
 
 async function api(path, options = {}) {
+
   const headers = {
+
     Authorization: 'Bearer ' + token,
+
     ...(options.headers || {})
+
   };
 
   if (options.body && !headers['Content-Type']) {
+
     headers['Content-Type'] = 'application/json';
+
   }
 
   let response;
 
   try {
+
     response = await fetch(API + path, {
+
       ...options,
+
       headers
+
     });
+
   } catch (error) {
+
     throw new Error('Backend-এর সঙ্গে সংযোগ করা যাচ্ছে না। Node.js server চালু আছে কি না পরীক্ষা করো।');
+
   }
 
   const data = await response.json().catch(() => ({}));
 
   if (response.status === 401 || response.status === 403) {
+
     sessionStorage.removeItem('adminToken');
+
     window.location.href = 'admin.html';
+
     throw new Error('Admin login required.');
+
   }
 
   if (!response.ok) {
+
     throw new Error(data.message || data.error || `Request failed (${response.status})`);
+
   }
 
   return data;
+
 }
 
 function selectedAnime() {
+
   return animeSelect.value;
+
 }
 
 function selectedSeason() {
+
   return seasonSelect.value;
+
 }
 
 function animeArrayFromResponse(data) {
+
   if (Array.isArray(data)) return data;
+
   if (Array.isArray(data.anime)) return data.anime;
+
   if (Array.isArray(data.data)) return data.data;
+
   return [];
+
 }
 
 function displayAnimeSelect(items) {
+
   const previous = animeSelect.value;
+
   animeSelect.replaceChildren();
 
   const defaultOption = document.createElement('option');
+
   defaultOption.value = '';
+
   defaultOption.textContent = 'Select an anime';
+
   animeSelect.appendChild(defaultOption);
 
   items.forEach(anime => {
+
     const option = document.createElement('option');
+
     option.value = anime._id;
+
     option.textContent = anime.title || 'Untitled Anime';
+
     animeSelect.appendChild(option);
+
   });
 
   if (items.some(item => item._id === previous)) {
+
     animeSelect.value = previous;
+
   }
+
 }
 
 function genresToText(genre) {
+
   if (Array.isArray(genre)) return genre.join(', ');
+
   return genre || '';
+
 }
 
 function displayAnimeCards() {
+
   const query = animeSearch.value.trim().toLowerCase();
+
   const status = $('animeStatusFilter').value;
 
   const filtered = allAnime.filter(anime => {
+
     const searchable = [
+
       anime.title || '',
+
       anime.description || '',
+
       genresToText(anime.genre)
+
     ].join(' ').toLowerCase();
 
     const matchesQuery = searchable.includes(query);
+
     const matchesStatus = !status || (anime.status || '') === status;
 
     return matchesQuery && matchesStatus;
+
   });
 
   $('totalAnime').textContent = allAnime.length;
@@ -887,744 +1585,1315 @@ function displayAnimeCards() {
   animeList.replaceChildren();
 
   if (!filtered.length) {
+
     const empty = document.createElement('div');
+
     empty.className = 'empty';
+
     empty.style.gridColumn = '1 / -1';
+
     empty.textContent = allAnime.length
+
       ? 'No anime matches your search.'
+
       : 'No anime found. Add your first anime using the form above.';
+
     animeList.appendChild(empty);
+
     return;
+
   }
 
   filtered.forEach(anime => {
+
     const card = document.createElement('article');
+
     card.className = 'anime-card';
 
     const poster = document.createElement('div');
+
     poster.className = 'poster';
 
     if (anime.poster) {
+
       const img = document.createElement('img');
+
       img.src = anime.poster;
+
       img.alt = anime.title || 'Anime poster';
+
       img.loading = 'lazy';
+
       img.onerror = () => {
+
         poster.textContent = 'Poster unavailable';
+
       };
+
       poster.appendChild(img);
+
     } else {
+
       poster.textContent = 'No poster';
+
     }
 
     const content = document.createElement('div');
+
     content.className = 'anime-card-content';
 
     const title = document.createElement('div');
+
     title.className = 'anime-card-title';
+
     title.textContent = anime.title || 'Untitled Anime';
 
     const meta = document.createElement('div');
+
     meta.textContent = [
+
   anime.type || 'Series',
+
   anime.year || 'Year unknown',
+
   anime.rating != null ? '★ ' + anime.rating : 'No rating',
+
   anime.type === 'Movie'
+
     ? 'Anime Movie'
+
     : (anime.totalEpisodes != null ? anime.totalEpisodes + ' eps' : ''),
+
   anime.status || ''
+
 ].filter(Boolean).join(' · ');
 
     const genre = document.createElement('p');
+
     genre.className = 'muted';
+
     genre.textContent = genresToText(anime.genre) || 'No genres added';
 
     const actions = document.createElement('div');
+
     actions.className = 'card-actions';
 
     const editButton = document.createElement('button');
+
     editButton.type = 'button';
+
     editButton.textContent = 'Edit';
+
     editButton.addEventListener('click', () => beginAnimeEdit(anime));
 
     const manageButton = document.createElement('button');
+
     manageButton.type = 'button';
+
     manageButton.className = 'secondary';
+
     manageButton.textContent = 'Seasons';
+
     manageButton.addEventListener('click', async () => {
+
       animeSelect.value = anime._id;
+
       $('selectedAnimeStat').textContent = anime.title || 'Selected';
+
       $('seasonManagement').scrollIntoView({ behavior: 'smooth' });
 
       try {
+
         await loadSeasons();
+
       } catch (error) {
+
         showMessage(getErrorMessage(error), 'error');
+
       }
+
     });
 
     const deleteButton = document.createElement('button');
+
     deleteButton.type = 'button';
+
     deleteButton.className = 'danger';
+
     deleteButton.textContent = 'Delete';
+
     deleteButton.addEventListener('click', () => deleteAnime(anime));
 
     actions.append(editButton, manageButton, deleteButton);
+
     content.append(title, meta, genre, actions);
+
     card.append(poster, content);
+
     animeList.appendChild(card);
+
   });
+
 }
 
 async function loadAnime() {
+
   const data = await api('/anime');
+
   allAnime = animeArrayFromResponse(data);
 
   displayAnimeSelect(allAnime);
+
   displayAnimeCards();
 
   $('selectedAnimeStat').textContent = selectedAnime()
+
     ? (allAnime.find(a => a._id === selectedAnime())?.title || 'Selected')
+
     : '—';
+
 }
 
 function resetAnimeForm() {
+
   $('animeForm').reset();
+
   $('animeEditId').value = '';
+
  $('animeFormHeading').textContent = 'Add New Anime';
+
   $('cancelAnimeEditBtn').hidden = true;
+
   $('posterPreview').classList.remove('visible');
+
   $('posterPreview').removeAttribute('src');
+
 }
 
 function beginAnimeEdit(anime) {
+
   $('animeEditId').value = anime._id;
+
   $('animeTitle').value = anime.title || '';
+
   $('animePoster').value = anime.poster || '';
+
   $('animeYear').value = anime.year ?? '';
+
   $('animeRating').value = anime.rating ?? '';
+
   $('animeTotalEpisodes').value = anime.totalEpisodes ?? '';
+
   $('animeType').value = anime.type || 'Series';
+
   $('animeStatus').value = anime.status || 'Ongoing';
+
   $('animeGenre').value = genresToText(anime.genre);
+
   $('animeDescription').value = anime.description || '';
 
 $('animeFormHeading').textContent = 'Edit Anime';
+
   $('cancelAnimeEditBtn').hidden = false;
 
   updatePosterPreview();
+
   $('animeManagement').scrollIntoView({ behavior: 'smooth' });
+
   $('animeTitle').focus();
+
 }
 
 function updatePosterPreview() {
+
   const preview = $('posterPreview');
+
   const url = $('animePoster').value.trim();
 
   if (!url) {
+
     preview.classList.remove('visible');
+
     preview.removeAttribute('src');
+
     return;
+
   }
 
   preview.onload = () => preview.classList.add('visible');
+
   preview.onerror = () => {
+
     preview.classList.remove('visible');
+
     showMessage('Poster URL থেকে ছবি লোড করা যায়নি। URL পরীক্ষা করো।', 'error');
+
   };
+
   preview.src = url;
+
 }
 
 $('animePoster').addEventListener('change', updatePosterPreview);
+
 $('animePoster').addEventListener('blur', updatePosterPreview);
 
 $('animeForm').addEventListener('submit', async event => {
+
   event.preventDefault();
 
   const editId = $('animeEditId').value;
+
   const title = $('animeTitle').value.trim();
+
   const ratingText = $('animeRating').value.trim();
+
   const yearText = $('animeYear').value.trim();
+
   const episodesText = $('animeTotalEpisodes').value.trim();
 
   if (!title) {
+
     showMessage('Anime title দিতে হবে।', 'error');
+
     return;
+
   }
 
   if (ratingText && (Number(ratingText) < 0 || Number(ratingText) > 10)) {
+
     showMessage('Rating 0 থেকে 10-এর মধ্যে দিতে হবে।', 'error');
+
     return;
+
   }
 
   const payload = {
+
     title,
+
     poster: $('animePoster').value.trim(),
+
     description: $('animeDescription').value.trim(),
+
     genre: $('animeGenre').value.split(',').map(g => g.trim()).filter(Boolean),
+
     type: $('animeType').value,
+
     status: $('animeStatus').value
+
   };
 
   if (yearText) payload.year = Number(yearText);
+
   if (ratingText) payload.rating = Number(ratingText);
+
   if (episodesText) payload.totalEpisodes = Number(episodesText);
 
   const saveButton = $('saveAnimeBtn');
+
   saveButton.disabled = true;
 
   try {
+
     await api(editId ? '/anime/' + editId : '/anime', {
+
       method: editId ? 'PUT' : 'POST',
+
       body: JSON.stringify(payload)
+
     });
 
     resetAnimeForm();
+
     await loadAnime();
 
     showMessage(
+
       editId ? 'Anime successfully updated.' : 'Anime successfully added.',
+
       'success'
+
     );
+
   } catch (error) {
+
     showMessage(getErrorMessage(error), 'error');
+
   } finally {
+
     saveButton.disabled = false;
+
   }
+
 });
 
 $('cancelAnimeEditBtn').addEventListener('click', resetAnimeForm);
 
 async function deleteAnime(anime) {
+
   const confirmed = confirm(
+
     `Delete "${anime.title}"?\n\nএটি Anime record মুছে দেবে। Backend যদি Season ও Episode cascade-delete না করে, সেগুলো আলাদাভাবে থেকে যেতে পারে। নিশ্চিত না হলে এখন Cancel করো।`
+
   );
 
   if (!confirmed) return;
 
   try {
+
     await api('/anime/' + anime._id, { method: 'DELETE' });
 
     if (selectedAnime() === anime._id) {
+
       seasonSelect.replaceChildren();
+
       seasonSelect.add(new Option('Select a season', ''));
+
       $('seasonsList').textContent = 'Select an anime first.';
+
       episodeList.textContent = 'Select a season first.';
+
     }
 
     await loadAnime();
+
     showMessage('Anime record deleted.', 'success');
+
   } catch (error) {
+
     showMessage(getErrorMessage(error), 'error');
+
   }
+
 }
 
 animeSearch.addEventListener('input', displayAnimeCards);
+
 $('animeStatusFilter').addEventListener('change', displayAnimeCards);
 
 async function loadSeasons() {
+
   const animeId = selectedAnime();
 
   seasonSelect.replaceChildren();
+
   seasonSelect.add(new Option('Select a season', ''));
+
   episodeList.textContent = 'Select a season first.';
+
   $('selectedSeasonStat').textContent = '—';
 
   if (!animeId) {
+
     $('seasonsList').textContent = 'প্রথমে একটি Anime নির্বাচন করো।';
+
     showMessage('প্রথমে একটি Anime নির্বাচন করো।', 'error');
+
     return;
+
   }
 
   const anime = allAnime.find(a => a._id === animeId);
+
   $('selectedAnimeStat').textContent = anime?.title || 'Selected';
 
   const data = await api('/seasons/anime/' + encodeURIComponent(animeId));
+
   const seasons = Array.isArray(data) ? data : (data.seasons || []);
 
   seasons.forEach(season => {
+
     seasonSelect.add(new Option(
+
       `Season ${season.seasonNumber}: ${season.title || 'Untitled'}`,
+
       season._id
+
     ));
+
   });
 
   const list = $('seasonsList');
+
   list.replaceChildren();
 
   if (!seasons.length) {
+
     list.innerHTML = '<div class="empty">এই Anime-এ এখনো কোনো Season নেই।</div>';
+
   }
 
   seasons.forEach(season => {
+
     const item = document.createElement('div');
+
     item.className = 'item';
 
     const title = document.createElement('strong');
+
     title.className = 'item-title';
+
     title.textContent = `Season ${season.seasonNumber}: ${season.title || 'Untitled'}`;
 
     const editButton = document.createElement('button');
+
     editButton.type = 'button';
+
     editButton.textContent = 'Edit Season';
 
     editButton.addEventListener('click', async () => {
+
       const newNumber = prompt('Season Number:', season.seasonNumber);
+
       if (newNumber === null) return;
 
       const number = Number(newNumber);
+
       if (!Number.isInteger(number) || number < 1) {
+
         showMessage('Season Number অবশ্যই 1 বা তার বেশি পূর্ণসংখ্যা হতে হবে।', 'error');
+
         return;
+
       }
 
       const newTitle = prompt('Season Title:', season.title || '');
+
       if (newTitle === null) return;
 
       try {
+
         await api('/seasons/' + season._id, {
+
           method: 'PUT',
+
           body: JSON.stringify({
+
             seasonNumber: number,
+
             title: newTitle.trim()
+
           })
+
         });
 
         await loadSeasons();
+
         showMessage('Season successfully updated.', 'success');
+
       } catch (error) {
+
         showMessage(getErrorMessage(error), 'error');
+
       }
+
     });
-    
-    
 
     const deleteButton = document.createElement('button');
+
     deleteButton.type = 'button';
+
     deleteButton.className = 'danger';
+
     deleteButton.textContent = 'Delete Season';
 
     deleteButton.addEventListener('click', async () => {
+
       const confirmed = confirm(
+
         `Season ${season.seasonNumber}: ${season.title || 'Untitled'} মুছে ফেলবে?\n\nসতর্কতা: এই Season-এর সব Episodes-ও স্থায়ীভাবে মুছে যাবে!`
+
       );
 
       if (!confirmed) return;
 
       try {
+
         await api('/seasons/' + season._id, { method: 'DELETE' });
 
         await loadSeasons();
+
         await loadEpisodes();
+
         showMessage('Season এবং এর সব Episodes মুছে ফেলা হয়েছে।', 'success');
+
       } catch (error) {
+
         showMessage(getErrorMessage(error), 'error');
+
       }
+
     });
 
     const chooseButton = document.createElement('button');
+
     chooseButton.type = 'button';
+
     chooseButton.className = 'secondary';
+
     chooseButton.textContent = 'View Episodes';
+
     chooseButton.addEventListener('click', async () => {
+
       seasonSelect.value = season._id;
+
       $('selectedSeasonStat').textContent = String(season.seasonNumber);
+
       $('episodeManagement').scrollIntoView({ behavior: 'smooth' });
 
       try {
+
         await loadEpisodes();
+
       } catch (error) {
+
         showMessage(getErrorMessage(error), 'error');
+
       }
+
     });
 
     const actions = document.createElement('div');
+
     actions.className = 'item-actions';
+
     actions.append(editButton, deleteButton, chooseButton);
+
     item.append(title, actions);
+
     list.appendChild(item);
+
   });
 
   showMessage('Seasons loaded: ' + seasons.length, 'success');
+
 }
 
 async function loadEpisodes() {
+
   const seasonId = selectedSeason();
+
   episodeList.replaceChildren();
 
   const season = seasonSelect.options[seasonSelect.selectedIndex];
+
   $('selectedSeasonStat').textContent = seasonId && season
+
     ? season.textContent.replace(/^Season\s+(\d+).*$/, '$1')
+
     : '—';
 
   if (!seasonId) {
+
     episodeList.innerHTML = '<div class="empty">Season নির্বাচন করো।</div>';
+
     return;
+
   }
 
   const data = await api('/episodes/season/' + encodeURIComponent(seasonId));
+
   const episodes = Array.isArray(data) ? data : (data.episodes || []);
 
   if (!episodes.length) {
+
     episodeList.innerHTML = '<div class="empty">এই Season-এ এখনো কোনো Episode নেই।</div>';
+
     return;
+
   }
 
   episodes.forEach(episode => {
+
     const item = document.createElement('div');
+
     item.className = 'item';
 
     const title = document.createElement('strong');
+
     title.className = 'item-title';
+
     title.textContent =
+
       'Episode ' + episode.episodeNumber + ': ' + (episode.title || 'Untitled');
 
     const link = document.createElement('a');
+
     link.href = episode.videoUrl || '#';
+
     link.target = '_blank';
+
     link.rel = 'noopener noreferrer';
+
     link.textContent = 'Open video URL';
+
     link.style.display = 'inline-block';
+
     link.style.marginTop = '4px';
 
     if (!episode.videoUrl) {
+
       link.removeAttribute('href');
+
       link.textContent = 'No video URL';
+
     }
 
     const deleteButton = document.createElement('button');
+
     deleteButton.type = 'button';
+
     deleteButton.className = 'danger';
+
     deleteButton.textContent = 'Delete Episode';
 
     deleteButton.addEventListener('click', async () => {
+
       if (!confirm('এই Episode স্থায়ীভাবে মুছে ফেলবে?')) return;
 
       try {
+
         await api('/episodes/' + episode._id, { method: 'DELETE' });
+
         await loadEpisodes();
+
         showMessage('Episode deleted.', 'success');
+
       } catch (error) {
+
         showMessage(getErrorMessage(error), 'error');
+
       }
+
     });
 
     const actions = document.createElement('div');
+
     actions.className = 'item-actions';
+
     actions.appendChild(deleteButton);
 
     item.append(title, link, actions);
+
     episodeList.appendChild(item);
+
   });
+
 }
 
 $('loadSeasonsBtn').addEventListener('click', async () => {
+
   try {
+
     await loadSeasons();
+
   } catch (error) {
+
     showMessage(getErrorMessage(error), 'error');
+
   }
+
 });
 
 animeSelect.addEventListener('change', async () => {
+
   try {
+
     await loadSeasons();
+
   } catch (error) {
+
     showMessage(getErrorMessage(error), 'error');
+
   }
+
 });
 
 seasonSelect.addEventListener('change', async () => {
+
   try {
+
     await loadEpisodes();
+
   } catch (error) {
+
     showMessage(getErrorMessage(error), 'error');
+
   }
+
 });
 
 $('seasonForm').addEventListener('submit', async event => {
+
   event.preventDefault();
 
   if (!selectedAnime()) {
+
     showMessage('প্রথমে Anime নির্বাচন করো।', 'error');
+
     return;
+
   }
 
   const seasonNumber = Number($('seasonNumber').value);
 
   if (!Number.isInteger(seasonNumber) || seasonNumber < 1) {
+
     showMessage('Season Number সঠিকভাবে দাও।', 'error');
+
     return;
+
   }
 
   try {
+
     await api('/seasons', {
+
       method: 'POST',
+
       body: JSON.stringify({
+
         anime: selectedAnime(),
+
         seasonNumber,
+
         title: $('seasonTitle').value.trim()
+
       })
+
     });
 
     event.target.reset();
+
     await loadSeasons();
+
     showMessage('Season added successfully!', 'success');
+
   } catch (error) {
+
     showMessage(getErrorMessage(error), 'error');
+
   }
+
 });
 
-
 $('episodeForm').addEventListener('submit', async event => {
+
   event.preventDefault();
 
   if (!selectedSeason()) {
+
     showMessage('প্রথমে Season নির্বাচন করো।', 'error');
+
     return;
+
   }
 
   const episodeNumber = Number($('episodeNumber').value);
+
   const videoUrl = $('videoUrl').value.trim();
 
   if (!Number.isInteger(episodeNumber) || episodeNumber < 1) {
+
     showMessage('Episode Number সঠিকভাবে দাও।', 'error');
+
     return;
+
   }
 
   const videoServers = {
+
     english: [
+
       { name: 'Server 1', url: $('englishServer1').value.trim() },
+
       { name: 'Server 2', url: $('englishServer2').value.trim() },
+
       { name: 'Server 3', url: $('englishServer3').value.trim() }
+
     ].filter(server => server.url),
 
     hindi: [
+
       { name: 'Server 1', url: $('hindiServer1').value.trim() },
+
       { name: 'Server 2', url: $('hindiServer2').value.trim() },
+
       { name: 'Server 3', url: $('hindiServer3').value.trim() }
+
     ].filter(server => server.url),
 
     bangla: [
+
       { name: 'Server 1', url: $('banglaServer1').value.trim() },
+
       { name: 'Server 2', url: $('banglaServer2').value.trim() },
+
       { name: 'Server 3', url: $('banglaServer3').value.trim() }
+
     ].filter(server => server.url)
+
   };
 
   const allUrls = [
+
     ...(videoUrl ? [videoUrl] : []),
+
     ...Object.values(videoServers).flat().map(server => server.url)
+
   ];
 
   if (allUrls.length === 0) {
+
     showMessage('কমপক্ষে একটি Video URL দিতে হবে।', 'error');
+
     return;
+
   }
 
   if (!allUrls.every(url => /^https?:\/\/\S+$/i.test(url))) {
+
     showMessage('প্রতিটি Video URL সঠিক HTTP/HTTPS URL হতে হবে।', 'error');
+
     return;
+
   }
 
   const submitButton = event.submitter;
+
   if (submitButton) submitButton.disabled = true;
 
   try {
+
     await api('/episodes', {
+
       method: 'POST',
+
       body: JSON.stringify({
+
         season: selectedSeason(),
+
         episodeNumber,
+
         title: $('episodeTitle').value.trim(),
+
         videoUrl,
+
         videoServers
+
       })
+
     });
 
     event.target.reset();
+
     await loadEpisodes();
+
     showMessage('Episode added successfully!', 'success');
+
   } catch (error) {
+
     showMessage(getErrorMessage(error), 'error');
+
   } finally {
+
     if (submitButton) submitButton.disabled = false;
+
   }
+
 });
 
-
 $('bulkEpisodeForm').addEventListener('submit', async event => {
+
   event.preventDefault();
 
   if (!selectedSeason()) {
+
     showMessage('প্রথমে Season নির্বাচন করো।', 'error');
+
     return;
+
   }
 
   const text = $('bulkEpisodeData').value.trim();
 
   const episodes = text.split(/\r?\n/)
+
     .filter(line => line.trim())
+
     .map(line => {
+
       const parts = line.split('|').map(part => part.trim());
 
       if (parts.length !== 3) {
+
         throw new Error(
+
           'প্রতিটি লাইনে Episode Number | Title | Video URL লিখো।'
+
         );
+
       }
 
       return {
+
         episodeNumber: Number(parts[0]),
+
         title: parts[1],
+
         videoUrl: parts[2]
+
       };
+
     });
 
   if (!episodes.length || episodes.length > 100) {
+
     showMessage('একবারে ১ থেকে ১০০টি Episode যোগ করা যাবে।', 'error');
+
     return;
+
   }
 
   const numbers = episodes.map(ep => ep.episodeNumber);
+
   const duplicateNumbers = numbers.some((number, index) =>
+
     numbers.indexOf(number) !== index
+
   );
 
   if (duplicateNumbers) {
+
     showMessage('Bulk list-এ একই Episode Number একাধিকবার আছে।', 'error');
+
     return;
+
   }
 
   if (episodes.some(ep =>
+
     !Number.isInteger(ep.episodeNumber) ||
+
     ep.episodeNumber < 1 ||
+
     !/^https?:\/\/\S+$/i.test(ep.videoUrl)
+
   )) {
+
     showMessage('Episode Number অথবা Video URL ঠিক করো।', 'error');
+
     return;
+
   }
 
   const submitButton = event.submitter;
+
   if (submitButton) submitButton.disabled = true;
 
   try {
+
     const result = await api('/episodes/bulk', {
+
       method: 'POST',
+
       body: JSON.stringify({
+
         season: selectedSeason(),
+
         episodes
+
       })
+
     });
 
     $('bulkEpisodeForm').reset();
+
     await loadEpisodes();
+
     showMessage(result.message || 'Bulk Episodes added successfully!', 'success');
+
   } catch (error) {
+
     showMessage(getErrorMessage(error), 'error');
+
   } finally {
+
     if (submitButton) submitButton.disabled = false;
+
   }
+
 });
 
 async function loadLatestEpisodes() {
+
   const list = $('latestEpisodesList');
+
   list.textContent = 'Loading latest episodes...';
 
   try {
+
     const data = await api('/episodes/latest');
+
     const episodes = Array.isArray(data) ? data : (data.episodes || []);
 
     list.replaceChildren();
 
     if (!episodes.length) {
+
       list.innerHTML = '<div class="empty">এখনো কোনো Episode যোগ করা হয়নি।</div>';
+
       return;
+
     }
 
     episodes.forEach(episode => {
+
       const item = document.createElement('div');
+
       item.className = 'item';
 
       const animeTitle = episode.anime?.title || 'Unknown Anime';
+
       const seasonNumber = episode.season?.seasonNumber || '?';
 
       item.textContent =
+
         `${animeTitle} — Season ${seasonNumber} — Episode ${episode.episodeNumber}: ${episode.title || 'Untitled'}`;
 
       list.appendChild(item);
+
     });
+
   } catch (error) {
+
     list.replaceChildren();
 
     const info = document.createElement('div');
+
     info.className = 'warning';
+
     info.textContent =
+
       'Latest Episodes লোড হয়নি: ' + getErrorMessage(error) +
+
       '. Backend-এ GET /api/episodes/latest route আছে কি না পরীক্ষা করো।';
 
     list.appendChild(info);
+
   }
+
 }
 
 $('latestEpisodesBtn').addEventListener('click', loadLatestEpisodes);
 
 $('logoutBtn').addEventListener('click', () => {
+
   sessionStorage.removeItem('adminToken');
+
   window.location.href = 'admin.html';
+
 });
 
 $('refreshBtn').addEventListener('click', async () => {
+
   try {
+
     await loadAnime();
 
     if (selectedAnime()) {
+
       await loadSeasons();
+
       if (selectedSeason()) await loadEpisodes();
+
     }
 
     await loadLatestEpisodes();
+
     showMessage('Dashboard data refreshed.', 'success');
+
   } catch (error) {
+
     showMessage(getErrorMessage(error), 'error');
+
   }
+
 });
 
 document.querySelectorAll('[data-target]').forEach(button => {
+
   button.addEventListener('click', () => {
+
     document.querySelectorAll('[data-target]').forEach(nav => {
+
       nav.classList.toggle('active', nav === button);
+
     });
 
     const target = $(button.dataset.target);
+
     if (target) target.scrollIntoView({ behavior: 'smooth' });
+
   });
+
 });
 
 async function startDashboard() {
+
   if (!token) {
+
     window.location.href = 'admin.html';
+
     return;
+
   }
 
   try {
+
     const me = await api('/auth/me');
 
     if (me.role !== 'admin') {
+
       sessionStorage.removeItem('adminToken');
+
       window.location.href = 'admin.html';
+
       return;
+
     }
 
     await loadAnime();
+
     await loadLatestEpisodes();
+
     showMessage('Admin dashboard ready.', 'success');
+
   } catch (error) {
+
     showMessage(getErrorMessage(error), 'error');
+
   }
+
 }
 
+
+/* === Neon dashboard interactions: themes, activity stream, live catalog chart === */
+const activityEvents = [];
+function showToast(text, type = 'info') {
+  let stack = document.getElementById('toastStack');
+  if (!stack) {
+    stack = document.createElement('div');
+    stack.id = 'toastStack';
+    stack.className = 'toast-stack';
+    stack.setAttribute('aria-live', 'polite');
+    document.body.appendChild(stack);
+  }
+  const toast = document.createElement('div');
+  toast.className = 'toast ' + (type || 'info');
+  toast.textContent = String(text);
+  stack.appendChild(toast);
+  window.setTimeout(() => toast.remove(), 4200);
+}
+function addActivity(text, type = 'info') {
+  const entry = { text: String(text), type, time: new Date() };
+  activityEvents.unshift(entry);
+  activityEvents.splice(8);
+  renderActivity();
+}
+function renderActivity() {
+  const list = document.getElementById('activityList');
+  const count = document.getElementById('activityCount');
+  if (!list || !count) return;
+  count.textContent = activityEvents.length + ' event' + (activityEvents.length === 1 ? '' : 's');
+  list.replaceChildren();
+  if (!activityEvents.length) {
+    const empty = document.createElement('div');
+    empty.className = 'empty-activity';
+    empty.textContent = 'Waiting for dashboard activity…';
+    list.appendChild(empty);
+    return;
+  }
+  activityEvents.forEach(event => {
+    const row = document.createElement('div');
+    row.className = 'activity-entry';
+    const icon = document.createElement('div');
+    icon.className = 'activity-icon';
+    icon.textContent = event.type === 'error' ? '!' : event.type === 'success' ? '✓' : '↗';
+    const copy = document.createElement('div');
+    copy.className = 'activity-copy';
+    const message = document.createElement('div');
+    message.textContent = event.text;
+    const time = document.createElement('div');
+    time.className = 'activity-time';
+    time.textContent = event.time.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    copy.append(message, time);
+    row.append(icon, copy);
+    list.appendChild(row);
+  });
+}
+function renderStatusChart() {
+  const target = document.getElementById('statusChart');
+  const totalBadge = document.getElementById('chartTotal');
+  if (!target || !totalBadge) return;
+  const counts = { Ongoing: 0, Completed: 0, Upcoming: 0 };
+  allAnime.forEach(item => {
+    const status = counts.hasOwnProperty(item.status) ? item.status : null;
+    if (status) counts[status]++;
+  });
+  const total = allAnime.length;
+  totalBadge.textContent = total + ' title' + (total === 1 ? '' : 's');
+  const colors = { Ongoing:'#8b5cf6', Completed:'#22d3ee', Upcoming:'#f59e0b' };
+  const labels = Object.keys(counts);
+  const max = Math.max(1, ...Object.values(counts));
+  const width = 560, height = 205, left = 94, right = 22, top = 16, rowGap = 58, barMax = width-left-right;
+  let svg = `<svg viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Catalog status chart">`;
+  labels.forEach((label, i) => {
+    const y = top + i * rowGap;
+    const barWidth = total ? (counts[label] / max) * barMax : 0;
+    svg += `<text x="0" y="${y+17}" fill="var(--muted)" font-size="12">${label}</text>`;
+    svg += `<rect x="${left}" y="${y}" width="${barMax}" height="25" rx="7" fill="var(--border)" opacity=".6"/>`;
+    if (barWidth > 0) svg += `<rect x="${left}" y="${y}" width="${barWidth}" height="25" rx="7" fill="${colors[label]}"><animate attributeName="width" from="0" to="${barWidth}" dur=".65s" fill="freeze"/></rect>`;
+    svg += `<text x="${width-right}" y="${y+17}" text-anchor="end" fill="var(--text)" font-size="12" font-weight="700">${counts[label]}</text>`;
+  });
+  svg += '</svg>';
+  if (!total) {
+    target.innerHTML = '<div class="empty">No catalog data yet. Add anime to populate analytics.</div>';
+  } else {
+    target.innerHTML = svg;
+  }
+}
+const themeButton = document.getElementById('themeBtn');
+function applyTheme(theme) {
+  document.body.classList.toggle('light-mode', theme === 'light');
+  if (themeButton) themeButton.textContent = theme === 'light' ? '☾ Dark mode' : '☼ Light mode';
+  const metaTheme = document.querySelector('meta[name="theme-color"]');
+  if (metaTheme) metaTheme.content = theme === 'light' ? '#f3f6fc' : '#0b1020';
+}
+const savedTheme = (() => { try { return localStorage.getItem('animeDekhoTheme'); } catch (_) { return null; } })();
+applyTheme(savedTheme === 'light' ? 'light' : 'dark');
+if (themeButton) themeButton.addEventListener('click', () => {
+  const next = document.body.classList.contains('light-mode') ? 'dark' : 'light';
+  applyTheme(next);
+  try { localStorage.setItem('animeDekhoTheme', next); } catch (_) {}
+  addActivity('Theme changed to ' + next + ' mode.', 'info');
+});
+const notificationButton = document.getElementById('notificationBtn');
+if (notificationButton) notificationButton.addEventListener('click', () => {
+  const panel = document.getElementById('activityPanel');
+  if (panel) panel.scrollIntoView({behavior:'smooth', block:'center'});
+});
+const originalDisplayAnimeCards = displayAnimeCards;
+displayAnimeCards = function() {
+  originalDisplayAnimeCards();
+  renderStatusChart();
+};
+
 startDashboard();
+
 </script>
+
 </body>
+
 </html>

@@ -1,27 +1,8 @@
 
 /* =========================================================
    AnimeDekhoBD - HOMEPAGE JAVASCRIPT
-
-   SECTION 1  : Configuration and shared data
-   SECTION 2  : Featured Anime
-   SECTION 3  : Continue Watching
-   SECTION 4  : Top 10 Series
-   SECTION 5  : Load Anime and Movies
-   SECTION 6  : Display Anime and Movie Cards
-   SECTION 7  : Search
-   SECTION 8  : Open Anime Watch Page
-   SECTION 9  : See All / Show Less
-   SECTION 10 : Genre Filter
-   SECTION 11 : Scroll Reveal Animation
-   SECTION 12 : Initialize Homepage
-
-   Note: Keep function names used by index.html unchanged.
-========================================================= */
-
-
-/* =========================================================
-   SECTION 1: CONFIGURATION AND SHARED DATA
-   কাজ: Backend URL এবং Anime/Movie-এর Data রাখা
+   Rating + Episode Badges for Anime, Genre, Top 10,
+   Continue Watching and Movies
 ========================================================= */
 
 const API_URL = 'http://localhost:5000/api';
@@ -31,8 +12,69 @@ let allMovieData = [];
 
 
 /* =========================================================
-   SECTION 2: LOAD FEATURED ANIME
-   কাজ: Homepage-এর Featured Banner-এ Anime দেখানো
+   SECTION 1: BADGE HELPERS
+========================================================= */
+
+function getCardRating(item) {
+  const rating = Number(item?.rating);
+
+  if (
+    item?.rating === null ||
+    item?.rating === undefined ||
+    item?.rating === '' ||
+    !Number.isFinite(rating)
+  ) {
+    return '0.0';
+  }
+
+  return rating.toFixed(1);
+}
+
+
+function getCardBadges(item, isMovie = false) {
+  const rating = getCardRating(item);
+
+  const isMovieItem =
+    isMovie ||
+    String(item?.type || '').toLowerCase() === 'movie';
+
+  let badge = '';
+
+  if (isMovieItem) {
+    badge = 'MOVIE';
+  } else {
+    const season =
+      item?.seasonNumber ??
+      item?.season ??
+      item?.season_number ??
+      1;
+
+    const episode =
+      item?.latestEpisodeNumber ??
+      item?.episodeNumber ??
+      item?.episode ??
+      item?.latestEpisode ??
+      item?.totalEpisodes ??
+      item?.episodeWatched;
+
+    if (episode != null && episode !== '') {
+      badge = `S${season} E${episode}`;
+    }
+  }
+
+  return `
+    <span class="rating-badge">★ ${rating}</span>
+    ${
+      badge
+        ? `<span class="episode-badge">${badge}</span>`
+        : ''
+    }
+  `;
+}
+
+
+/* =========================================================
+   SECTION 2: FEATURED ANIME
 ========================================================= */
 
 async function loadFeatured() {
@@ -53,19 +95,19 @@ async function loadFeatured() {
     const durationEl = document.getElementById('featured-duration');
     const posterEl = document.getElementById('featured-poster');
 
-    // Backend-এ Featured Anime না থাকলে
     if (!featured) {
       if (titleEl) titleEl.textContent = 'No Anime Available';
+
       if (descEl) {
         descEl.textContent = 'Add anime from the Admin Panel.';
       }
+
       if (posterEl) posterEl.removeAttribute('src');
       return;
     }
-    // Featured Anime-এর ID সংরক্ষণ
-window.featuredAnimeId = featured._id || featured.id;
 
-    // Featured Anime-এর তথ্য দেখানো
+    window.featuredAnimeId = featured._id || featured.id;
+
     if (titleEl) {
       titleEl.textContent = featured.title || 'Featured Anime';
     }
@@ -101,6 +143,7 @@ window.featuredAnimeId = featured._id || featured.id;
     const descEl = document.getElementById('featured-desc');
 
     if (titleEl) titleEl.textContent = 'Featured Anime';
+
     if (descEl) {
       descEl.textContent = 'Unable to load anime right now.';
     }
@@ -110,21 +153,18 @@ window.featuredAnimeId = featured._id || featured.id;
 
 /* =========================================================
    SECTION 3: CONTINUE WATCHING
-   কাজ: Login করা User-এর Watch History দেখানো
 ========================================================= */
 
 async function loadWatchHistory() {
   const container = document.getElementById('watchHistory');
 
-  // HTML-এ Watch History Section না থাকলে থামবে
   if (!container) return;
 
-  // Login Token পরীক্ষা করা
   const token = localStorage.getItem('token');
 
   if (!token) {
     container.innerHTML =
-      '<p style="grid-column: 1/-1; text-align: center;">' +
+      '<p style="grid-column:1/-1;text-align:center;">' +
       'Please login to see watch history</p>';
     return;
   }
@@ -144,29 +184,60 @@ async function loadWatchHistory() {
 
     if (!Array.isArray(history) || history.length === 0) {
       container.innerHTML =
-        '<p style="grid-column: 1/-1; text-align: center;">' +
+        '<p style="grid-column:1/-1;text-align:center;">' +
         'No watch history yet</p>';
       return;
     }
 
-    // প্রতিটি Watch History Item-এর Card তৈরি করা
-    container.innerHTML = history.map(item => `
-      <div class="anime-card" onclick="openAnime('${item.animeId}')">
-        <img
-          src="${item.posterUrl || ''}"
-          alt="${item.animeTitle || 'Anime'}"
-          loading="lazy"
-        >
-        <h4>${item.animeTitle || 'Untitled Anime'}</h4>
-        <p>Episode: ${item.episodeWatched ?? 0}</p>
-      </div>
-    `).join('');
+    container.innerHTML = history.map(item => {
+      const animeId = item.animeId || item._id || '';
+
+      const savedAnime = [
+        ...allAnimeData,
+        ...allMovieData
+      ].find(anime =>
+        String(anime._id || anime.id) === String(animeId)
+      );
+
+      const cardData = {
+        ...(savedAnime || {}),
+        ...item,
+        rating: item.rating ?? savedAnime?.rating,
+        type: item.type ?? savedAnime?.type,
+        seasonNumber:
+          item.seasonNumber ?? savedAnime?.seasonNumber,
+        episodeNumber:
+          item.episodeNumber ??
+          item.episodeWatched ??
+          savedAnime?.latestEpisodeNumber
+      };
+
+      return `
+        <div class="anime-card"
+             onclick="openAnime('${animeId}')">
+
+          <div class="poster-wrap">
+            <img
+              src="${item.posterUrl || savedAnime?.poster || ''}"
+              alt="${item.animeTitle || savedAnime?.title || 'Anime'}"
+              loading="lazy"
+            >
+
+            ${getCardBadges(cardData)}
+          </div>
+
+          <h4>${item.animeTitle || savedAnime?.title || 'Untitled Anime'}</h4>
+
+          <p>Episode: ${item.episodeWatched ?? 0}</p>
+        </div>
+      `;
+    }).join('');
 
   } catch (error) {
     console.error('Error loading watch history:', error);
 
     container.innerHTML =
-      '<p style="grid-column: 1/-1; text-align: center;">' +
+      '<p style="grid-column:1/-1;text-align:center;">' +
       'Unable to load watch history</p>';
   }
 }
@@ -174,7 +245,6 @@ async function loadWatchHistory() {
 
 /* =========================================================
    SECTION 4: TOP 10 SERIES
-   কাজ: Rating অনুযায়ী সর্বোচ্চ ১০টি Series দেখানো
 ========================================================= */
 
 async function loadTopSeries() {
@@ -191,7 +261,6 @@ async function loadTopSeries() {
 
     const data = await response.json();
 
-    // মূল Data পরিবর্তন না করে Rating অনুযায়ী Sort করা
     const topSeries = Array.isArray(data)
       ? [...data]
           .sort((a, b) =>
@@ -202,19 +271,27 @@ async function loadTopSeries() {
 
     if (topSeries.length === 0) {
       container.innerHTML =
-        '<p style="grid-column: 1/-1; text-align: center;">' +
+        '<p style="grid-column:1/-1;text-align:center;">' +
         'No series available</p>';
       return;
     }
 
     container.innerHTML = topSeries.map((anime, index) => `
-      <div class="top10-item" onclick="openAnime('${anime._id}')">
+      <div class="top10-item"
+           onclick="openAnime('${anime._id || anime.id || ''}')">
+
         <div class="rank">${index + 1}</div>
-        <img
-          src="${anime.poster || 'https://via.placeholder.com/350x450?text=Anime'}"
-          alt="${anime.title || 'Anime'}"
-          loading="lazy"
-        >
+
+        <div class="poster-wrap">
+          <img
+            src="${anime.poster || 'https://via.placeholder.com/350x450?text=Anime'}"
+            alt="${anime.title || 'Anime'}"
+            loading="lazy"
+          >
+
+          ${getCardBadges(anime)}
+        </div>
+
         <h4>${anime.title || 'Untitled Anime'}</h4>
       </div>
     `).join('');
@@ -223,7 +300,7 @@ async function loadTopSeries() {
     console.error('Error loading top series:', error);
 
     container.innerHTML =
-      '<p style="grid-column: 1/-1; text-align: center;">' +
+      '<p style="grid-column:1/-1;text-align:center;">' +
       'Unable to load series</p>';
   }
 }
@@ -231,7 +308,6 @@ async function loadTopSeries() {
 
 /* =========================================================
    SECTION 5: LOAD ALL ANIME AND MOVIES
-   কাজ: Backend থেকে Data নিয়ে Series ও Movie আলাদা করা
 ========================================================= */
 
 async function loadAllAnime() {
@@ -248,22 +324,18 @@ async function loadAllAnime() {
 
     const data = await response.json();
 
-    // Backend-এর Response Array কি না পরীক্ষা করা
     if (!Array.isArray(data)) {
       throw new Error('Anime API did not return an array');
     }
 
-    // Series-এর Data
     allAnimeData = data.filter(anime =>
-      (anime.type || 'Series').toLowerCase() !== 'movie'
+      String(anime.type || 'Series').toLowerCase() !== 'movie'
     );
 
-    // Movie-এর Data
     allMovieData = data.filter(anime =>
-      (anime.type || '').toLowerCase() === 'movie'
+      String(anime.type || '').toLowerCase() === 'movie'
     );
 
-    // Homepage-এ দুই ধরনের Card দেখানো
     renderAnime(allAnimeData);
     renderMovies(allMovieData);
 
@@ -283,7 +355,7 @@ async function loadAllAnime() {
 
 /* =========================================================
    SECTION 6A: DISPLAY ANIME CARDS
-   কাজ: Anime-এর Poster, Title, Rating ও Year দেখানো
+   Anime + Genre + Search Results
 ========================================================= */
 
 function renderAnime(animes, targetId = 'allAnime') {
@@ -297,13 +369,21 @@ function renderAnime(animes, targetId = 'allAnime') {
   }
 
   container.innerHTML = animes.map(anime => `
-    <div class="anime-card" onclick="openAnime('${anime._id}')">
-      <img
-        src="${anime.poster || ''}"
-        alt="${anime.title || 'Anime'}"
-        loading="lazy"
-      >
+    <div class="anime-card"
+         onclick="openAnime('${anime._id || anime.id || ''}')">
+
+      <div class="poster-wrap">
+        <img
+          src="${anime.poster || ''}"
+          alt="${anime.title || 'Anime'}"
+          loading="lazy"
+        >
+
+        ${getCardBadges(anime)}
+      </div>
+
       <h4>${anime.title || 'Untitled'}</h4>
+
       <p>⭐ ${anime.rating ?? 0} • ${anime.year || ''}</p>
     </div>
   `).join('');
@@ -312,7 +392,6 @@ function renderAnime(animes, targetId = 'allAnime') {
 
 /* =========================================================
    SECTION 6B: DISPLAY MOVIE CARDS
-   কাজ: Anime Movies Section-এ Movie দেখানো
 ========================================================= */
 
 function renderMovies(movies) {
@@ -326,13 +405,21 @@ function renderMovies(movies) {
   }
 
   container.innerHTML = movies.map(movie => `
-    <div class="anime-card" onclick="openAnime('${movie._id}')">
-      <img
-        src="${movie.poster || ''}"
-        alt="${movie.title || 'Movie'}"
-        loading="lazy"
-      >
+    <div class="anime-card"
+         onclick="openAnime('${movie._id || movie.id || ''}')">
+
+      <div class="poster-wrap">
+        <img
+          src="${movie.poster || ''}"
+          alt="${movie.title || 'Movie'}"
+          loading="lazy"
+        >
+
+        ${getCardBadges(movie, true)}
+      </div>
+
       <h4>${movie.title || 'Untitled Movie'}</h4>
+
       <p>🎬 Movie • ⭐ ${movie.rating ?? 0} • ${movie.year || ''}</p>
     </div>
   `).join('');
@@ -341,20 +428,17 @@ function renderMovies(movies) {
 
 /* =========================================================
    SECTION 7A: SEARCH ANIME AND MOVIES
-   কাজ: Search Box-এ লেখা নাম দিয়ে Content খোঁজা
 ========================================================= */
 
 function searchAnimes(query) {
   const term = query.trim().toLowerCase();
 
-  // Search Box খালি হলে আগের তালিকা ফিরিয়ে আনবে
   if (!term) {
     renderAnime(allAnimeData);
     renderMovies(allMovieData);
     return;
   }
 
-  // Series ও Movie একসঙ্গে Search করা
   const allContent = [...allAnimeData, ...allMovieData];
 
   const results = allContent.filter(anime =>
@@ -367,16 +451,15 @@ function searchAnimes(query) {
 
 /* =========================================================
    SECTION 7B: DISPLAY SEARCH RESULTS
-   কাজ: Series ও Movie-এর Search Result আলাদা Section-এ দেখানো
 ========================================================= */
 
 function renderSearchResults(results) {
   const filteredAnime = results.filter(anime =>
-    (anime.type || 'Series').toLowerCase() !== 'movie'
+    String(anime.type || 'Series').toLowerCase() !== 'movie'
   );
 
   const filteredMovies = results.filter(anime =>
-    (anime.type || '').toLowerCase() === 'movie'
+    String(anime.type || '').toLowerCase() === 'movie'
   );
 
   renderAnime(filteredAnime);
@@ -386,7 +469,6 @@ function renderSearchResults(results) {
 
 /* =========================================================
    SECTION 8: OPEN ANIME WATCH PAGE
-   কাজ: নির্বাচিত Anime-এর Watch Page খোলা
 ========================================================= */
 
 function openAnime(animeId) {
@@ -399,7 +481,6 @@ function openAnime(animeId) {
 
 /* =========================================================
    SECTION 9A: SEE ALL / SHOW LESS
-   কাজ: Card-এর তালিকা Expand ও Collapse করা
 ========================================================= */
 
 function toggleSeeAll(button) {
@@ -416,7 +497,6 @@ function toggleSeeAll(button) {
 
 /* =========================================================
    SECTION 9B: UPDATE SEE ALL BUTTONS
-   কাজ: Card সংখ্যা অনুযায়ী Button দেখানো বা লুকানো
 ========================================================= */
 
 function setupSeeAllSections() {
@@ -429,13 +509,13 @@ function setupSeeAllSections() {
 
   sections.forEach(({ id, limit }) => {
     const container = document.getElementById(id);
+
     const button = document.querySelector(
       `.see-all-btn[data-target="${id}"]`
     );
 
     if (!container || !button) return;
 
-    // বর্তমান Section-এর Button Update করা
     function updateButton() {
       const cards = Array.from(container.children).filter(element =>
         element.classList.contains('anime-card') ||
@@ -454,7 +534,6 @@ function setupSeeAllSections() {
 
     updateButton();
 
-    // একই Container-এ একাধিক Observer তৈরি হওয়া আটকানো
     if (container.dataset.seeAllObserver === 'true') return;
 
     const observer = new MutationObserver(updateButton);
@@ -470,7 +549,6 @@ function setupSeeAllSections() {
 
 /* =========================================================
    SECTION 10: GENRE FILTER
-   কাজ: Genre অনুযায়ী Anime Filter করা
 ========================================================= */
 
 function setupGenreFilter() {
@@ -481,13 +559,11 @@ function setupGenreFilter() {
   const genreMessage = document.getElementById('genreMessage');
   const genreResults = document.getElementById('genreAnimeResults');
 
-  // প্রয়োজনীয় HTML Element আছে কি না পরীক্ষা করা
   if (!toggleButton || !genreSidebar) {
     console.warn('Genre section HTML was not found.');
     return;
   }
 
-  // শুরুতে Genre List ও Result লুকানো থাকবে
   genreSidebar.classList.remove('genres-visible');
 
   if (genreResults) genreResults.style.display = 'none';
@@ -497,7 +573,6 @@ function setupGenreFilter() {
   toggleButton.textContent = 'Show All ▼';
   toggleButton.setAttribute('aria-expanded', 'false');
 
-  // Genre List Show / Hide করা
   toggleButton.addEventListener('click', () => {
     const isVisible =
       genreSidebar.classList.toggle('genres-visible');
@@ -511,7 +586,6 @@ function setupGenreFilter() {
       String(isVisible)
     );
 
-    // List বন্ধ হলে নির্বাচিত Genre ও Result Reset করা
     if (!isVisible) {
       genreButtons.forEach(button => {
         button.classList.toggle(
@@ -538,12 +612,10 @@ function setupGenreFilter() {
     }
   });
 
-  // Genre Button Click করলে Anime Filter করা
   genreButtons.forEach(button => {
     button.addEventListener('click', () => {
       const selectedGenre = button.dataset.genre;
 
-      // নির্বাচিত Button-এ Active Class যোগ করা
       genreButtons.forEach(item => {
         item.classList.toggle('active', item === button);
       });
@@ -566,7 +638,6 @@ function setupGenreFilter() {
         genreResults.style.display = 'grid';
       }
 
-      // Anime Data এখনো Load না হলে
       if (allAnimeData.length === 0) {
         if (genreMessage) {
           genreMessage.textContent =
@@ -577,7 +648,6 @@ function setupGenreFilter() {
         return;
       }
 
-      // Database-এ Genre Array অথবা String—দুই ধরনের Data সমর্থন
       const filteredAnime = allAnimeData.filter(anime => {
         if (selectedGenre === 'All') return true;
 
@@ -607,11 +677,9 @@ function setupGenreFilter() {
 
 /* =========================================================
    SECTION 11: SCROLL REVEAL ANIMATION
-   কাজ: স্ক্রল করে Section-এ গেলে Animation দেখানো
 ========================================================= */
 
 function setupAnimeDekhoScrollReveal() {
-  // User Reduced Motion পছন্দ করলে Animation বন্ধ রাখা
   if (
     window.matchMedia &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -619,7 +687,6 @@ function setupAnimeDekhoScrollReveal() {
     return;
   }
 
-  // যেসব Section-এ Scroll Animation থাকবে
   const selectors = [
     '.genre-layout',
     '#watchHistory',
@@ -637,7 +704,6 @@ function setupAnimeDekhoScrollReveal() {
     });
   });
 
-  // Browser-এ IntersectionObserver না থাকলে স্বাভাবিকভাবে দেখানো
   if (!('IntersectionObserver' in window)) {
     return;
   }
@@ -663,17 +729,14 @@ function setupAnimeDekhoScrollReveal() {
 
 /* =========================================================
    SECTION 12: INITIALIZE HOMEPAGE
-   কাজ: HTML Load হলে Homepage-এর Function চালু করা
 ========================================================= */
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Homepage-এর Data Load করা
   loadFeatured();
   loadWatchHistory();
   loadTopSeries();
   loadAllAnime();
 
-  // Search Box চালু করা
   const searchInput = document.getElementById('searchInput');
 
   if (searchInput) {
@@ -682,10 +745,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // See All Button ও Genre Filter চালু করা
   setupSeeAllSections();
   setupGenreFilter();
-
-  // Scroll Animation চালু করা
   setupAnimeDekhoScrollReveal();
 });

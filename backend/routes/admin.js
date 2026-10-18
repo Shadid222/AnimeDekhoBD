@@ -2,7 +2,8 @@
 const express = require('express');
 const router = express.Router();
 
-const User = require('../models/User');
+const db = require('../db');
+const bcrypt = require('bcryptjs');
 const adminAuth = require('../middleware/adminAuth');
 
 // Create a new admin — existing admins only
@@ -32,39 +33,35 @@ router.post('/admins', adminAuth, async (req, res) => {
       });
     }
 
-    const existingUser = await User.findOne({
-      $or: [
-        { username: cleanUsername },
-        { email: cleanEmail },
-      ],
-    });
+    const existingUser = await db.query(
+      `SELECT id
+       FROM public.users
+       WHERE username = $1 OR email = $2
+       LIMIT 1`,
+      [cleanUsername, cleanEmail]
+    );
 
-    if (existingUser) {
+    if (existingUser.rows.length > 0) {
       return res.status(409).json({
         error: 'Username or email already exists',
       });
     }
 
-    const newAdmin = new User({
-      username: cleanUsername,
-      email: cleanEmail,
-      password,
-      role: 'admin',
-    });
+    const hashedPassword = await bcrypt.hash(password, 12);
 
-    await newAdmin.save();
+    const result = await db.query(
+      `INSERT INTO public.users (username, email, password, role)
+       VALUES ($1, $2, $3, 'admin')
+       RETURNING id, username, email, role`,
+      [cleanUsername, cleanEmail, hashedPassword]
+    );
 
     return res.status(201).json({
       message: 'Admin created successfully',
-      admin: {
-        id: newAdmin._id,
-        username: newAdmin.username,
-        email: newAdmin.email,
-        role: newAdmin.role,
-      },
+      admin: result.rows[0],
     });
   } catch (err) {
-    if (err.code === 11000) {
+    if (err.code === '23505') {
       return res.status(409).json({
         error: 'Username or email already exists',
       });
