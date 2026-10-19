@@ -17,6 +17,7 @@ app.use('/api/anime', require('./routes/anime'));
 app.use('/api/seasons', require('./routes/seasons'));
 app.use('/api/episodes', require('./routes/episodes'));
 app.use('/api/watch-history', require('./routes/watchHistory'));
+app.use('/api/external-anime', require('./routes/externalAnimeApi'));
 
 // TEST ROUTE
 app.get('/', async (req, res) => {
