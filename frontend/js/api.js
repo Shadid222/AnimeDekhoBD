@@ -701,9 +701,9 @@ function setupGenreFilter() {
       }
 
       if (
-  allAnimeData.length === 0 &&
-  externalAnimeData.length === 0
-) {
+        allAnimeData.length === 0 &&
+        externalAnimeData.length === 0
+      ) {
         if (genreMessage) {
           genreMessage.textContent =
             'No anime data loaded yet. Please refresh and try again.';
@@ -712,9 +712,16 @@ function setupGenreFilter() {
         if (genreResults) genreResults.innerHTML = '';
         return;
       }
-      const genreSource = [...allAnimeData, ...externalAnimeData];
 
-     const filteredAnime = genreSource.filter(anime => {
+      const genreSource = [
+        ...allAnimeData,
+        ...externalAnimeData
+      ];
+
+      const normalizedSelectedGenre =
+        selectedGenre.trim().toLowerCase();
+
+      const filteredAnime = genreSource.filter(anime => {
         if (selectedGenre === 'All') return true;
 
         let genres = anime.genre ?? anime.genres ?? [];
@@ -723,19 +730,14 @@ function setupGenreFilter() {
           genres = String(genres).split(/[,|/]/);
         }
 
-       const normalizedSelectedGenre =
-  selectedGenre.trim().toLowerCase();
-
-return genres.some(genre => {
-  const normalizedGenre = String(genre)
-    .trim()
-    .toLowerCase();
-
-  return normalizedGenre
-    .split(',')
-    .map(item => item.trim())
-    .includes(normalizedSelectedGenre);
-});
+        return genres.some(genre =>
+          String(genre)
+            .toLowerCase()
+            .split(',')
+            .map(item => item.trim())
+            .includes(normalizedSelectedGenre)
+        );
+      });
 
       renderAnime(filteredAnime, 'genreAnimeResults');
 
@@ -747,6 +749,7 @@ return genres.some(genre => {
     });
   });
 }
+
 
 
 /* =========================================================
