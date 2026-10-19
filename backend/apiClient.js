@@ -14,7 +14,10 @@ async function requestApi(providerName, endpoint, options = {}) {
   }
 
   const url = new URL(provider.baseUrl);
-  const target = new URL(endpoint, url.origin);
+ const target = new URL(
+  endpoint.slice(1),
+  `${url.origin}${url.pathname.replace(/\/$/, '')}/`
+);
 
   // Never allow a request to a different host.
   if (target.origin !== url.origin || target.pathname.includes('/../')) {
