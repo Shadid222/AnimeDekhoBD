@@ -2895,6 +2895,161 @@ startDashboard();
 
 </script>
 
+<!-- AnimeDekhoBD: TMDB Anime Import -->
+<section id="tmdbImportPanel" style="margin:24px 0;padding:20px;border:1px solid #444;border-radius:12px;background:#171923;color:#fff;">
+  <h2>TMDB Anime Import</h2>
+  <p>Search anime and import it into your Anime Library.</p>
+
+  <div style="display:flex;gap:10px;flex-wrap:wrap;">
+    <input id="tmdbSearchInput" type="search" placeholder="Search anime title..." style="flex:1;min-width:200px;padding:12px;border-radius:7px;">
+    <button id="tmdbSearchButton" type="button" style="padding:12px 18px;cursor:pointer;">Search</button>
+  </div>
+
+  <p id="tmdbImportMessage" role="status"></p>
+  <div id="tmdbSearchResults" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;"></div>
+</section>
+
+<script>
+(() => {
+  const API_BASE = 'https://animedekhobd.onrender.com/api';
+  const searchInput = document.getElementById('tmdbSearchInput');
+  const searchButton = document.getElementById('tmdbSearchButton');
+  const message = document.getElementById('tmdbImportMessage');
+  const results = document.getElementById('tmdbSearchResults');
+
+  function getAdminToken() {
+    return sessionStorage.getItem('adminToken');
+  }
+
+  async function request(path, options = {}) {
+    const token = getAdminToken();
+    if (!token) throw new Error('Admin login required. Please log in again.');
+
+    const response = await fetch(API_BASE + path, {
+      ...options,
+      headers: {
+        Authorization: 'Bearer ' + token,
+        ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+        ...(options.headers || {})
+      }
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.message || data.error || `Request failed (${response.status})`);
+    }
+    return data;
+  }
+
+  function makeText(tag, value) {
+    const element = document.createElement(tag);
+    element.textContent = value || '';
+    return element;
+  }
+
+  async function searchAnime() {
+    const query = searchInput.value.trim();
+    if (!query) {
+      message.textContent = 'Enter an anime title first.';
+      return;
+    }
+
+    searchButton.disabled = true;
+    results.replaceChildren();
+    message.textContent = 'Searching TMDB...';
+
+    try {
+      const data = await request(
+        '/external-anime/tmdb/search?q=' + encodeURIComponent(query)
+      );
+      const animeList = Array.isArray(data.results) ? data.results : [];
+
+      if (!animeList.length) {
+        message.textContent = 'No anime found. Try another title.';
+        return;
+      }
+
+      message.textContent = `Found ${animeList.length} result(s).`;
+      animeList.forEach(anime => {
+        const card = document.createElement('article');
+        card.style.cssText = 'padding:14px;border:1px solid #444;border-radius:10px;background:#222633;';
+
+        if (anime.posterUrl) {
+          const poster = document.createElement('img');
+          poster.src = anime.posterUrl;
+          poster.alt = anime.title || 'Anime poster';
+          poster.loading = 'lazy';
+          poster.style.cssText = 'width:100%;max-height:280px;object-fit:cover;border-radius:7px;';
+          card.appendChild(poster);
+        }
+
+        card.appendChild(makeText('h3', anime.title || 'Untitled Anime'));
+        card.appendChild(makeText('p', anime.description || 'No description available.'));
+        card.appendChild(makeText('p', 'Genres: ' + ((anime.genres || []).join(', ') || 'Animation')));
+
+        const importButton = makeText('button', 'Import & Save');
+        importButton.type = 'button';
+        importButton.style.cssText = 'padding:10px 14px;cursor:pointer;border-radius:6px;';
+        importButton.addEventListener('click', () => importAnime(anime, importButton));
+        card.appendChild(importButton);
+        results.appendChild(card);
+      });
+    } catch (error) {
+      message.textContent = error.message;
+    } finally {
+      searchButton.disabled = false;
+    }
+  }
+
+  async function importAnime(anime, button) {
+    button.disabled = true;
+    button.textContent = 'Saving...';
+    message.textContent = '';
+
+    try {
+      await request('/anime', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: anime.title,
+          description: anime.description || '',
+          poster: anime.posterUrl || '',
+          rating: Number(anime.rating || 0),
+year: anime.year || new Date().getFullYear(),
+          genre: anime.genres && anime.genres.length ? anime.genres : ['Animation'],
+          totalEpisodes: 24,
+          type: 'Series',
+          status: 'Ongoing',
+          isFeatured: false
+        })
+      });
+
+      button.textContent = 'Imported ✓';
+      message.textContent = `${anime.title} saved successfully.`;
+
+      // Refresh the existing Anime Library if its loader is globally accessible.
+      if (typeof window.loadAnime === 'function') {
+        await window.loadAnime();
+      } else {
+        message.textContent += ' Refresh the Anime Library to see it.';
+      }
+    } catch (error) {
+      button.disabled = false;
+      button.textContent = 'Import & Save';
+      message.textContent = error.message;
+    }
+  }
+
+  searchButton.addEventListener('click', searchAnime);
+  searchInput.addEventListener('keydown', event => {
+    if (event.key === 'Enter') searchAnime();
+  });
+})();
+</script>
 </body>
+</html>
+
+
+</body>
+
 
 </html>

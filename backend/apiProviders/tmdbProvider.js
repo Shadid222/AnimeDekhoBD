@@ -22,7 +22,7 @@ function mapAnime(item) {
     )
   ];
 
-  return normalizeAnime({
+  const normalized = normalizeAnime({
     id: String(item.id),
     title: item.name || item.original_name,
     description: item.overview || '',
@@ -32,7 +32,17 @@ function mapAnime(item) {
     genres,
     source: 'tmdb'
   });
+
+  return {
+    ...normalized,
+    year: item.first_air_date
+      ? Number(item.first_air_date.slice(0, 4))
+      : null,
+    rating: Number(item.vote_average || 0),
+    type: 'Series'
+  };
 }
+
 
 module.exports = {
   async searchAnime(query) {
