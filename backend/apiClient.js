@@ -44,9 +44,9 @@ async function requestApi(providerName, endpoint, options = {}) {
 
   // TMDB uses the api_key query parameter.
   if (providerName === 'tmdb' && provider.apiKey) {
-    target.searchParams.set('api_key', provider.apiKey);
-    delete headers['x-api-key'];
-  }
+  headers.Authorization = `Bearer ${provider.apiKey}`;
+  delete headers['x-api-key'];
+}
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10000);
