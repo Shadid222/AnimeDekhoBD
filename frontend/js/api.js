@@ -9,6 +9,7 @@ const API_URL = 'https://animedekhobd.onrender.com/api';
 
 let allAnimeData = [];
 let allMovieData = [];
+let externalAnimeData = [];
 
 
 /* =========================================================
@@ -278,7 +279,9 @@ async function loadTopSeries() {
 
     container.innerHTML = topSeries.map((anime, index) => `
       <div class="top10-item"
-           onclick="openAnime('${anime._id || anime.id || ''}')">
+          ${anime.source === 'tmdb'
+  ? ''
+  : `onclick="openAnime('${anime._id || anime.id || ''}')"`}>
 
         <div class="rank">${index + 1}</div>
 
@@ -374,17 +377,23 @@ function renderAnime(animes, targetId = 'allAnime') {
 
       <div class="poster-wrap">
         <img
-          src="${anime.poster || ''}"
+        src="${anime.poster || anime.posterUrl || ''}"
           alt="${anime.title || 'Anime'}"
           loading="lazy"
         >
 
         ${getCardBadges(anime)}
       </div>
+<h4>${anime.title || 'Untitled'}</h4>
 
-      <h4>${anime.title || 'Untitled'}</h4>
+<p>⭐ ${anime.rating ?? 0} • ${anime.year || ''}</p>
 
-      <p>⭐ ${anime.rating ?? 0} • ${anime.year || ''}</p>
+${anime.source === 'tmdb'
+  ? `<p class="anime-genres">${
+      (Array.isArray(anime.genres) ? anime.genres : [])
+        .join(' • ') || 'Genre unavailable'
+    }</p>`
+  : ''}
     </div>
   `).join('');
 }
@@ -430,7 +439,7 @@ function renderMovies(movies) {
    SECTION 7A: SEARCH ANIME AND MOVIES
 ========================================================= */
 
-function searchAnimes(query) {
+async function searchAnimes(query) {
   const term = query.trim().toLowerCase();
 
   if (!term) {
@@ -441,11 +450,64 @@ function searchAnimes(query) {
 
   const allContent = [...allAnimeData, ...allMovieData];
 
-  const results = allContent.filter(anime =>
+  const localResults = allContent.filter(anime =>
     (anime.title || '').toLowerCase().includes(term)
   );
 
-  renderSearchResults(results);
+  if (localResults.length > 0) {
+    renderSearchResults(localResults);
+    return;
+  }
+
+  if (term.length < 2) {
+    renderAnime([]);
+    renderMovies([]);
+    return;
+  }
+
+  const container = document.getElementById('allAnime');
+
+  if (container) {
+    container.innerHTML = '<p>Searching TMDB...</p>';
+  }
+
+  try {
+    const response = await fetch(
+      `${API_URL}/external-anime/tmdb/search?q=${encodeURIComponent(query.trim())}`
+    );
+
+    if (!response.ok) {
+      throw new Error('TMDB search failed');
+    }
+
+    const data = await response.json();
+
+    const results = Array.isArray(data)
+      ? data
+      : data.results || data.anime || data.data || [];
+      externalAnimeData = results.map(anime => ({
+  ...anime,
+  source: 'tmdb',
+  poster: anime.poster || anime.posterUrl || '',
+  type: 'Series'
+}));
+
+    renderSearchResults(
+      results.map(anime => ({
+        ...anime,
+        source: 'tmdb',
+        poster: anime.poster || anime.posterUrl || '',
+        type: 'Series'
+      }))
+    );
+  } catch (error) {
+    console.error('TMDB search error:', error);
+
+    if (container) {
+      container.innerHTML =
+        '<p>Search failed. Please try again.</p>';
+    }
+  }
 }
 
 
@@ -638,7 +700,10 @@ function setupGenreFilter() {
         genreResults.style.display = 'grid';
       }
 
-      if (allAnimeData.length === 0) {
+      if (
+  allAnimeData.length === 0 &&
+  externalAnimeData.length === 0
+) {
         if (genreMessage) {
           genreMessage.textContent =
             'No anime data loaded yet. Please refresh and try again.';
@@ -647,8 +712,9 @@ function setupGenreFilter() {
         if (genreResults) genreResults.innerHTML = '';
         return;
       }
+      const genreSource = [...allAnimeData, ...externalAnimeData];
 
-      const filteredAnime = allAnimeData.filter(anime => {
+     const filteredAnime = genreSource.filter(anime => {
         if (selectedGenre === 'All') return true;
 
         let genres = anime.genre ?? anime.genres ?? [];
@@ -657,11 +723,19 @@ function setupGenreFilter() {
           genres = String(genres).split(/[,|/]/);
         }
 
-        return genres.some(genre =>
-          String(genre).trim().toLowerCase() ===
-          selectedGenre.trim().toLowerCase()
-        );
-      });
+       const normalizedSelectedGenre =
+  selectedGenre.trim().toLowerCase();
+
+return genres.some(genre => {
+  const normalizedGenre = String(genre)
+    .trim()
+    .toLowerCase();
+
+  return normalizedGenre
+    .split(',')
+    .map(item => item.trim())
+    .includes(normalizedSelectedGenre);
+});
 
       renderAnime(filteredAnime, 'genreAnimeResults');
 
