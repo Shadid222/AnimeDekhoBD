@@ -240,7 +240,24 @@ router.get('/top-series', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const result = await db.query(
-      'SELECT * FROM public.animes ORDER BY title ASC'
+      `SELECT
+         a.*,
+         latest.season_number AS "seasonNumber",
+         latest.latest_episode_number AS "latestEpisodeNumber"
+       FROM public.animes a
+       LEFT JOIN LATERAL (
+         SELECT
+           s.season_number,
+           MAX(e.episode_number) AS latest_episode_number
+         FROM public.seasons s
+         LEFT JOIN public.episodes e
+           ON e.season_id = s.id
+         WHERE s.anime_id = a.id
+         GROUP BY s.id, s.season_number
+         ORDER BY s.season_number DESC
+         LIMIT 1
+       ) latest ON TRUE
+       ORDER BY a.title ASC`
     );
 
     return res.json(result.rows.map(formatAnime));
@@ -251,7 +268,6 @@ router.get('/', async (req, res) => {
     });
   }
 });
-
 // GET TOP 10 — public
 router.get('/top/rated', async (req, res) => {
   try {
