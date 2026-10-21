@@ -74,9 +74,14 @@ function getCardBadges(item, isMovie = false) {
 }
 
 
+
 /* =========================================================
-   SECTION 2: FEATURED ANIME
+   SECTION 2: FEATURED ANIME — AUTO ROTATION
 ========================================================= */
+
+let featuredAnimeList = [];
+let featuredAnimeIndex = 0;
+let featuredRotationStarted = false;
 
 async function loadFeatured() {
   try {
@@ -87,55 +92,47 @@ async function loadFeatured() {
     }
 
     const data = await response.json();
-    const featured = Array.isArray(data) ? data[0] : data;
+    featuredAnimeList = Array.isArray(data) ? data : data ? [data] : [];
 
-    const titleEl = document.getElementById('featured-title');
-    const descEl = document.getElementById('featured-desc');
-    const ratingEl = document.getElementById('featured-rating');
-    const yearEl = document.getElementById('featured-year');
-    const durationEl = document.getElementById('featured-duration');
-    const posterEl = document.getElementById('featured-poster');
+    if (featuredAnimeList.length === 0) {
+      const titleEl = document.getElementById('featured-title');
+      const descEl = document.getElementById('featured-desc');
 
-    if (!featured) {
       if (titleEl) titleEl.textContent = 'No Anime Available';
+      if (descEl) descEl.textContent = 'No anime available right now.';
 
-      if (descEl) {
-        descEl.textContent = 'Add anime from the Admin Panel.';
-      }
-
-      if (posterEl) posterEl.removeAttribute('src');
       return;
     }
 
-    window.featuredAnimeId = featured._id || featured.id;
+    featuredAnimeIndex = 0;
+    showCurrentFeaturedAnime();
 
-    if (titleEl) {
-      titleEl.textContent = featured.title || 'Featured Anime';
-    }
+    if (!featuredRotationStarted) {
+      featuredRotationStarted = true;
 
-    if (descEl) {
-      descEl.textContent =
-        featured.description || 'Amazing anime series';
-    }
+      setInterval(async () => {
+        try {
+          const refreshResponse = await fetch(`${API_URL}/anime/featured`);
 
-    if (ratingEl) {
-      ratingEl.textContent = `⭐ ${featured.rating ?? 0}`;
-    }
+          if (refreshResponse.ok) {
+            const latestData = await refreshResponse.json();
 
-    if (yearEl) {
-      yearEl.textContent = featured.year || '2024';
-    }
+            if (Array.isArray(latestData) && latestData.length > 0) {
+              featuredAnimeList = latestData;
+              featuredAnimeIndex %= featuredAnimeList.length;
+            }
+          }
+        } catch (error) {
+          console.error('Featured list refresh failed:', error);
+        }
 
-    if (durationEl) {
-      durationEl.textContent = featured.duration || '24m';
-    }
+        if (featuredAnimeList.length > 1) {
+          featuredAnimeIndex =
+            (featuredAnimeIndex + 1) % featuredAnimeList.length;
 
-    if (posterEl) {
-      posterEl.src =
-        featured.poster ||
-        'https://via.placeholder.com/350x450?text=Featured';
-
-      posterEl.alt = featured.title || 'Featured Anime';
+          showCurrentFeaturedAnime();
+        }
+   }, 10000);
     }
   } catch (error) {
     console.error('Error loading featured anime:', error);
@@ -144,10 +141,35 @@ async function loadFeatured() {
     const descEl = document.getElementById('featured-desc');
 
     if (titleEl) titleEl.textContent = 'Featured Anime';
+    if (descEl) descEl.textContent = 'Unable to load anime right now.';
+  }
+}
 
-    if (descEl) {
-      descEl.textContent = 'Unable to load anime right now.';
-    }
+function showCurrentFeaturedAnime() {
+  const featured = featuredAnimeList[featuredAnimeIndex];
+  if (!featured) return;
+
+  const titleEl = document.getElementById('featured-title');
+  const descEl = document.getElementById('featured-desc');
+  const ratingEl = document.getElementById('featured-rating');
+  const yearEl = document.getElementById('featured-year');
+  const durationEl = document.getElementById('featured-duration');
+  const posterEl = document.getElementById('featured-poster');
+
+  window.featuredAnimeId = featured._id || featured.id;
+
+  if (titleEl) titleEl.textContent = featured.title || 'Featured Anime';
+  if (descEl) descEl.textContent = featured.description || 'Amazing anime series';
+  if (ratingEl) ratingEl.textContent = `⭐ ${featured.rating ?? 0}`;
+  if (yearEl) yearEl.textContent = featured.year || '';
+  if (durationEl) durationEl.textContent = featured.duration || '24m';
+
+  if (posterEl) {
+    posterEl.src =
+      featured.poster ||
+      'https://via.placeholder.com/350x450?text=Featured';
+
+    posterEl.alt = featured.title || 'Featured Anime';
   }
 }
 

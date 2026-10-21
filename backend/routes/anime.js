@@ -164,36 +164,36 @@ async function selectAnime(id, client = db) {
   return formatAnime(result.rows[0]);
 }
 
-// GET FEATURED ANIME — public
+ // GET FEATURED ANIME — automatic trending
 router.get('/featured', async (req, res) => {
   try {
-    const result = await db.query(
-      `SELECT * FROM public.animes
-       WHERE is_featured = TRUE
-       ORDER BY created_at DESC
-       LIMIT 1`
-    );
+    const result = await db.query(`
+      SELECT
+        a.*,
+        (
+          CASE
+            WHEN a.created_at >= NOW() - INTERVAL '7 days'
+            THEN 30
+            ELSE 0
+          END
+          + COALESCE(a.rating, 0) * 5
+          + CASE
+              WHEN a.created_at >= NOW() - INTERVAL '30 days'
+              THEN 10
+              ELSE 0
+            END
+        ) AS trending_score
+      FROM public.animes a
+      WHERE a.type <> 'Movie'
+      ORDER BY trending_score DESC, a.created_at DESC
+      LIMIT 10
+    `);
 
-    let featured = result.rows[0];
-
-    // Fallback keeps the homepage populated until an admin
-    // chooses a featured anime.
-    if (!featured) {
-      const fallback = await db.query(
-        `SELECT * FROM public.animes
-         WHERE type <> 'Movie'
-         ORDER BY rating DESC, created_at DESC
-         LIMIT 1`
-      );
-
-      featured = fallback.rows[0];
-    }
-
-    return res.json(featured ? [formatAnime(featured)] : []);
+    return res.json(result.rows.map(formatAnime));
   } catch (err) {
     console.error('Featured anime error:', err.message);
     return res.status(500).json({
-      error: 'Could not fetch featured anime'
+      error: 'Could not fetch trending anime'
     });
   }
 });
