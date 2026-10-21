@@ -12,6 +12,7 @@ app.use(express.json());
 
 // ROUTES
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/traffic', require('./routes/traffic'));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/anime', require('./routes/anime'));
 app.use('/api/seasons', require('./routes/seasons'));
