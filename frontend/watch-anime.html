@@ -106,6 +106,55 @@ body{background:#0b0910;color:var(--text)}
 .error-message{background:#ff6b6b1a;border:1px solid #ff6b6b;color:#ff8585;padding:18px;border-radius:8px}
 @media(max-width:768px){.watch-container{padding:20px 12px 35px}.player-section{padding:10px}.player-top{padding:9px}.bottom-controls{padding:5px 7px 8px}.control-row{gap:5px}#volumeBar{width:55px}#playbackSpeed{max-width:76px;font-size:12px}.small-control{min-width:28px;min-height:28px;padding:3px}.anime-details{grid-template-columns:1fr;gap:20px}.anime-poster{width:100%;max-width:320px;height:400px}.anime-info h1{font-size:25px}.episodes-section{padding:17px}.episodes-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.episode-card{padding:12px 9px}.time-label{font-size:10px}}
 @media(max-width:400px){#volumeBar{display:none}.center-controls{gap:9px}}
+
+
+/* Mobile YouTube-style fullscreen: fill the viewport without stretching video. */
+@media (max-width: 768px) {
+  .video-player:fullscreen,
+  .video-player:-webkit-full-screen {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    max-width: none !important;
+    aspect-ratio: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: #000 !important;
+    overflow: hidden !important;
+    z-index: 99999 !important;
+  }
+
+  .video-player:fullscreen #episodePlayer,
+  .video-player:-webkit-full-screen #episodePlayer {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+  }
+
+  .video-player:fullscreen #vimeoPlayer,
+  .video-player:-webkit-full-screen #vimeoPlayer {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 100% !important;
+  }
+
+  .video-player:fullscreen .player-overlay,
+  .video-player:-webkit-full-screen .player-overlay {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -260,7 +309,7 @@ const API_URL = 'https://animedekhobd.onrender.com/api';
 const $ = id => document.getElementById(id);
 const player = $('episodePlayer');
 const shell = $('videoPlayerShell');
-let vimeoFrame = $('vimeoPlayer'); // Re-created for each episode to avoid stale Vimeo iframe state.
+const vimeoFrame = $('vimeoPlayer');
 let hlsInstance = null;
 let vimeoApiPlayer = null;
 let activeEmbedProvider = '';
@@ -333,26 +382,14 @@ function releaseVimeoApiPlayer() {
 }
 
 function destroyVimeoPlayer() {
-  // Important: detach/replace the iframe BEFORE asking the old Vimeo SDK
-  // instance to destroy itself. Player.destroy() can remove its iframe; if it
-  // runs first, the replacement can become detached and the next episode stays
-  // blank until the whole page is refreshed.
-  vimeoInitAttempt++;
-  clearVimeoLoadTimer();
-  const oldFrame = vimeoFrame;
-  const freshFrame = oldFrame.cloneNode(false);
-  freshFrame.onload = null;
-  freshFrame.onerror = null;
-  freshFrame.removeAttribute('src');
-  oldFrame.onload = null;
-  oldFrame.onerror = null;
-  if (oldFrame.parentNode) oldFrame.parentNode.replaceChild(freshFrame, oldFrame);
-  vimeoFrame = freshFrame;
-  // The old frame is now detached, so an asynchronous SDK destroy cannot remove
-  // the new iframe that will host the next episode.
-  oldFrame.removeAttribute('src');
+  // Invalidate pending callbacks before removing the current iframe.
   releaseVimeoApiPlayer();
   if (hlsInstance) { try { hlsInstance.destroy(); } catch (_) {} hlsInstance = null; }
+  vimeoInitAttempt++;
+  clearVimeoLoadTimer();
+  vimeoFrame.onload = null;
+  vimeoFrame.onerror = null;
+  vimeoFrame.removeAttribute('src');
   shell.classList.remove('vimeo-active');
   activeEmbedProvider = '';
   setVimeoSpeedControlsVisible(false);
@@ -507,13 +544,6 @@ function initializeVimeoPlayer(embedUrl, attemptId, episodeLabel) {
   }, 15000);
 
   // Setting src after the handlers ensures the first iframe load can be observed.
-  // Keep the Vimeo iframe as the source of playback even if the optional SDK fails.
-  // This URL assignment must happen only after the fresh iframe is attached to the DOM.
-  if (!vimeoFrame.isConnected) {
-    const currentFrame = $('vimeoPlayer');
-    if (currentFrame && currentFrame !== vimeoFrame) vimeoFrame = currentFrame;
-    if (!vimeoFrame.isConnected) shell.appendChild(vimeoFrame);
-  }
   vimeoFrame.src = embedUrl;
 }
 
@@ -859,20 +889,13 @@ $('vimeoLoopButton').addEventListener('click', async () => {
   }
 });
 
-$('vimeoFullscreenButton').addEventListener('click', async () => {
-  try {
-    if (document.fullscreenElement) await document.exitFullscreen();
-    else if (vimeoFrame.requestFullscreen) await vimeoFrame.requestFullscreen();
-    else setVimeoSpeedStatus('এই browser-এ Vimeo fullscreen নিজের player controls থেকে চালু করো.');
-  } catch (error) { setVimeoSpeedStatus('Fullscreen blocked; Vimeo-এর own fullscreen control ব্যবহার করো.', 'error'); }
-});
+$('vimeoFullscreenButton').addEventListener('click', togglePlayerFullscreen);
 
 function resetPlayerForEpisode() {
   clearRetryTimer();
   player.onerror = null;
   player.pause();
   player.removeAttribute('src');
-  player.querySelectorAll('track[data-anime-sidecar="true"]').forEach(track => track.remove());
   player.load();
   destroyVimeoPlayer();
   $('mediaTracksPanel').hidden = true;
@@ -1105,14 +1128,96 @@ $('loopButton').addEventListener('click', () => {
   $('trackStatus').textContent = customLoopEnabled ? 'Current episode loop is on.' : 'Current episode loop is off.';
 });
 
-$('fullscreenButton').addEventListener('click', async () => {
+function isMobileFullscreenDevice() {
+  return window.matchMedia('(max-width: 768px), (pointer: coarse)').matches ||
+    /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
+async function lockLandscapeIfSupported() {
+  if (!isMobileFullscreenDevice()) return;
   try {
-    if (document.fullscreenElement) await document.exitFullscreen();
-    else if (shell.requestFullscreen) await shell.requestFullscreen();
-    else if (player.webkitEnterFullscreen) player.webkitEnterFullscreen();
-  } catch (err) { console.error('Fullscreen error:', err); }
-});
-document.addEventListener('fullscreenchange', showControls);
+    // Browsers that support orientation lock generally require fullscreen first.
+    if (screen.orientation && typeof screen.orientation.lock === 'function') {
+      await screen.orientation.lock('landscape');
+    }
+  } catch (error) {
+    // Keep fullscreen working when the browser/OS does not permit orientation lock.
+    console.info('Landscape orientation lock unavailable:', error && error.name);
+  }
+}
+
+async function togglePlayerFullscreen() {
+  const activeFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
+
+  if (activeFullscreen) {
+    try {
+      if (document.exitFullscreen) await document.exitFullscreen();
+      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+    } catch (error) {
+      console.warn('Exit fullscreen failed:', error);
+    }
+    try {
+      if (screen.orientation && typeof screen.orientation.unlock === 'function') {
+        screen.orientation.unlock();
+      }
+    } catch (_) {}
+    return;
+  }
+
+  try {
+    // Fullscreen the complete player shell so both custom video and Vimeo iframe fill it.
+    if (shell.requestFullscreen) {
+      await shell.requestFullscreen();
+      await lockLandscapeIfSupported();
+      return;
+    }
+    if (shell.webkitRequestFullscreen) {
+      shell.webkitRequestFullscreen();
+      await lockLandscapeIfSupported();
+      return;
+    }
+    // iOS Safari may expose native fullscreen only for the HTML video element.
+    if (!shell.classList.contains('vimeo-active') && player.webkitEnterFullscreen) {
+      player.webkitEnterFullscreen();
+      return;
+    }
+    // Final Vimeo-specific fallback for browsers that allow iframe fullscreen.
+    if (shell.classList.contains('vimeo-active') && vimeoFrame.requestFullscreen) {
+      await vimeoFrame.requestFullscreen();
+      await lockLandscapeIfSupported();
+      return;
+    }
+    setStatus('এই browser-এ Full Screen সমর্থিত নয়।');
+  } catch (error) {
+    console.warn('Fullscreen request failed:', error);
+    if (!shell.classList.contains('vimeo-active') && player.webkitEnterFullscreen) {
+      try { player.webkitEnterFullscreen(); return; } catch (_) {}
+    }
+    if (shell.classList.contains('vimeo-active') && vimeoFrame.requestFullscreen) {
+      try {
+        await vimeoFrame.requestFullscreen();
+        await lockLandscapeIfSupported();
+        return;
+      } catch (_) {}
+    }
+    setStatus('Full Screen চালু হয়নি। Vimeo হলে তার নিজের fullscreen button ব্যবহার করো।');
+  }
+}
+
+$('fullscreenButton').addEventListener('click', togglePlayerFullscreen);
+
+function handleFullscreenChange() {
+  showControls();
+  if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+    try {
+      if (screen.orientation && typeof screen.orientation.unlock === 'function') {
+        screen.orientation.unlock();
+      }
+    } catch (_) {}
+  }
+}
+document.addEventListener('fullscreenchange', handleFullscreenChange);
+document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
 document.addEventListener('keydown', event => {
   const tag = document.activeElement?.tagName;
   if (['INPUT','SELECT','TEXTAREA'].includes(tag) || event.ctrlKey || event.altKey || event.metaKey) return;
