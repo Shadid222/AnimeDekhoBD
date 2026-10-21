@@ -132,7 +132,7 @@ async function loadFeatured() {
 
           showCurrentFeaturedAnime();
         }
-   }, 10000);
+  }, 5000);
     }
   } catch (error) {
     console.error('Error loading featured anime:', error);
