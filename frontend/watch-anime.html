@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,676 +5,560 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Watch Anime - AnimeDekho</title>
 <link rel="stylesheet" href="css/style.css">
-
 <style>
-:root {
-  --purple: #a47aff;
-  --purple-dark: #8052d6;
-  --panel: #17131f;
-  --text: #e8e0f5;
-}
+:root{--purple:#a47aff;--purple-dark:#8052d6;--panel:#17131f;--text:#e8e0f5}
+*{box-sizing:border-box}
+body{background:#0b0910;color:var(--text)}
+.watch-container{max-width:1280px;margin:auto;padding:30px 20px 50px}
+.back-button{display:inline-block;margin-bottom:20px;padding:10px 18px;background:var(--panel);color:#c5a7ff;border:1px solid #7650c8;border-radius:8px;text-decoration:none}
+.back-button:hover{background:var(--purple-dark);color:white}
+.player-section{padding:20px;margin-bottom:35px;background:linear-gradient(145deg,#17141f,#0d0c12);border:1px solid #39284f;border-radius:16px;box-shadow:0 12px 40px #0005}
+.player-options{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:15px}
+.language-btn,#serverSelect,#seasonSelect{padding:10px 13px;color:#e2d5ff;background:#211a2d;border:1px solid #493565;border-radius:8px}
+.language-btn{cursor:pointer}
+.language-btn:hover,.language-btn.active{background:var(--purple-dark);color:white;border-color:var(--purple)}
+#serverStatus{color:#c9b7e8;font-size:13px}
+#playerMode{padding:10px 13px;color:#f0e8ff;background:#211a2d;border:1px solid #7650c8;border-radius:8px;max-width:100%}.mode-hint{color:#a99abf;font-size:12px;flex:1;min-width:180px}
+.video-player{width:100%;position:relative;aspect-ratio:16/9;background:#000;overflow:hidden;border:1px solid #39284f;border-radius:12px;isolation:isolate}
+#episodePlayer{display:block;width:100%;height:100%;background:#000;object-fit:contain}
+#episodePlayer::-webkit-media-controls{display:none!important}
+/* Vimeo is a separate, cross-origin iframe; let its own controls receive touch input. */
+#vimeoPlayer{display:none;position:absolute;top:0;left:0;width:100%;height:100%;min-height:100%;border:0;background:#000;z-index:30;pointer-events:auto;touch-action:auto}
+.video-player.vimeo-active #vimeoPlayer{display:block!important;pointer-events:auto}
+.video-player.vimeo-active #episodePlayer{visibility:hidden}
+.video-player.vimeo-active .player-overlay{display:none!important;pointer-events:none!important}
 
-* { box-sizing: border-box; }
+/* Always-visible episode navigation (outside the iframe so it works with Vimeo too). */
+.episode-navigation{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;padding:12px 14px;border:1px solid #493565;border-radius:10px;background:linear-gradient(135deg,#211a2d,#14111b)}
+.episode-navigation button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:10px 14px;border:1px solid #7650c8;border-radius:8px;background:#241936;color:#fff;font-weight:700;cursor:pointer;transition:background .2s,transform .2s}
+.episode-navigation button:hover:not(:disabled){background:#8052d6;transform:translateY(-1px)}
+.episode-navigation button:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.episode-navigation-label{flex:1;min-width:0;text-align:center;color:#e8e0f5;font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+.episode-navigation-label strong{display:block;color:#c5a7ff;font-size:14px}
+@media(max-width:480px){.episode-navigation{gap:7px;padding:9px}.episode-navigation button{min-height:40px;padding:8px 9px;font-size:12px}.episode-navigation-label{font-size:11px}.episode-navigation-label strong{font-size:12px}}
+.vimeo-external-controls{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-top:12px;padding:12px 14px;border:1px solid #493565;border-radius:10px;background:linear-gradient(135deg,#211a2d,#14111b);color:#e8e0f5}
+.vimeo-external-controls[hidden]{display:none!important}
+.vimeo-external-controls label{font-size:13px;font-weight:700;color:#c5a7ff}
+#vimeoPlaybackSpeed{padding:9px 12px;min-width:115px;border-radius:8px;color:#fff;background:#211a2d;border:1px solid #8052d6;max-width:100%}
+#vimeoSpeedStatus{flex:1;min-width:180px;color:#c9b7e8;font-size:12px;line-height:1.5}
+#vimeoSpeedStatus.success{color:#86efac}
+#vimeoSpeedStatus.error{color:#fca5a5}
+.player-overlay{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;background:linear-gradient(to bottom,#0008 0%,transparent 23%,transparent 55%,#000b 100%);opacity:1;transition:opacity .3s;pointer-events:none;z-index:5}
+.video-player.controls-hidden .player-overlay{opacity:0}
+.player-overlay button,.player-overlay input,.player-overlay select{pointer-events:auto}
+.player-top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px}
+.player-title{color:white;font-size:14px;font-weight:600;text-shadow:0 1px 5px #000;overflow:hidden;text-overflow:ellipsis}
+.speed-indicator{display:none;padding:6px 10px;border-radius:7px;color:white;background:#8052d6e8;font-weight:700;font-size:13px}
+.speed-indicator.visible{display:inline-block}
+.center-controls{display:flex;align-items:center;justify-content:center;gap:clamp(12px,4vw,35px);position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
+.player-button{display:inline-flex;align-items:center;justify-content:center;border:0;cursor:pointer;color:white;background:#211a2dcc;transition:background .2s,transform .2s}
+.player-button:hover{background:#8052d6;transform:scale(1.06)}
+.center-button{width:clamp(42px,6vw,62px);height:clamp(42px,6vw,62px);border-radius:50%;font-size:clamp(19px,3vw,29px);border:1px solid #ffffff70}
+.center-button.main{width:clamp(58px,8vw,78px);height:clamp(58px,8vw,78px);background:#8052d6e8;font-size:clamp(25px,4vw,37px)}
+.bottom-controls{padding:10px 14px 12px}
+.seek-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+#seekBar{width:100%;height:5px;accent-color:var(--purple);cursor:pointer}
+.time-label{white-space:nowrap;font-size:12px;color:white;text-shadow:0 1px 3px #000}
+.control-row{display:flex;align-items:center;flex-wrap:wrap;gap:12px}
+.small-control{min-width:32px;min-height:32px;border-radius:6px;padding:5px 8px;font-size:17px}
+.control-spacer{flex:1}
+#volumeBar{width:85px;accent-color:var(--purple);cursor:pointer}
+#playbackSpeed{max-width:105px;padding:7px;border-radius:6px;color:white;background:#211a2d;border:1px solid #7650c8}
+.player-status{margin-top:12px;color:#c9c3d6;font-size:13px;line-height:1.6;overflow-wrap:anywhere}
 
-body {
-  background: #0b0910;
-  color: var(--text);
-}
+.track-controls{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-top:11px;padding:12px;border:1px solid #493565;border-radius:10px;background:#17131f}
+.track-controls[hidden]{display:none!important}
+.track-controls label{display:flex;align-items:center;gap:7px;font-size:12px;color:#c5a7ff;font-weight:700}
+.track-controls select,.vimeo-control-panel select{max-width:190px;min-width:100px;padding:8px;color:#f0e8ff;background:#211a2d;border:1px solid #7650c8;border-radius:7px}
+#trackStatus{color:#c9b7e8;font-size:12px;flex:1;min-width:150px}
+.vimeo-control-panel{display:flex;flex-direction:column;gap:12px;margin-top:12px;padding:13px;background:linear-gradient(135deg,#211a2d,#14111b);border:1px solid #493565;border-radius:10px;color:#e8e0f5}
+.vimeo-control-panel[hidden]{display:none!important}
+.vimeo-control-row{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.vimeo-control-row button{padding:8px 11px;border:1px solid #7650c8;border-radius:7px;background:#241936;color:#fff;cursor:pointer}
+.vimeo-control-row button:hover{background:#8052d6}
+.vimeo-control-row input[type=range]{min-width:80px;flex:1;accent-color:var(--purple)}
+.vimeo-control-row label{display:flex;align-items:center;gap:7px;font-size:12px;color:#c5a7ff;font-weight:700}
+.vimeo-time{font-size:12px;color:#fff;white-space:nowrap}
+.vimeo-note{font-size:12px;line-height:1.5;color:#c9b7e8}
+#vimeoSpeedStatus.success{color:#86efac}#vimeoSpeedStatus.error{color:#fca5a5}
+@media(max-width:768px){.track-controls{padding:9px;gap:8px}.track-controls label{width:100%;justify-content:space-between}.track-controls select{flex:1;max-width:none}.vimeo-control-row label{width:100%;justify-content:space-between}.vimeo-control-row select{flex:1;max-width:none}.vimeo-control-row input[type=range]{min-width:65px}}
 
-.watch-container {
-  max-width: 1280px;
-  margin: auto;
-  padding: 30px 20px 50px;
-}
-
-.back-button {
-  display: inline-block;
-  margin-bottom: 20px;
-  padding: 10px 18px;
-  background: var(--panel);
-  color: #c5a7ff;
-  border: 1px solid #7650c8;
-  border-radius: 8px;
-  text-decoration: none;
-}
-
-.back-button:hover {
-  background: var(--purple-dark);
-  color: white;
-}
-
-.player-section {
-  padding: 20px;
-  margin-bottom: 35px;
-  background: linear-gradient(145deg,#17141f,#0d0c12);
-  border: 1px solid #39284f;
-  border-radius: 16px;
-  box-shadow: 0 12px 40px #0005;
-}
-
-.player-options {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 15px;
-}
-
-.language-btn, #serverSelect, #seasonSelect {
-  padding: 10px 13px;
-  color: #e2d5ff;
-  background: #211a2d;
-  border: 1px solid #493565;
-  border-radius: 8px;
-}
-
-.language-btn { cursor: pointer; }
-
-.language-btn:hover,
-.language-btn.active {
-  background: var(--purple-dark);
-  color: white;
-  border-color: var(--purple);
-}
-
-#serverStatus {
-  color: #c9b7e8;
-  font-size: 13px;
-}
-
-.video-player {
-  width: 100%;
-  position: relative;
-  aspect-ratio: 16/9;
-  background: #000;
-  overflow: hidden;
-  border: 1px solid #39284f;
-  border-radius: 12px;
-  isolation: isolate;
-}
-
-#episodePlayer {
-  display: block;
-  width: 100%;
-  height: 100%;
-  background: #000;
-  object-fit: contain;
-}
-
-#episodePlayer::-webkit-media-controls {
-  display: none !important;
-}
-
-/* Vimeo iframe must be OUTSIDE the video element */
-#vimeoPlayer {
-  display: none;
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  border: 0;
-  background: #000;
-}
-
-.video-player.vimeo-active #episodePlayer {
-  display: none;
-}
-
-.video-player.vimeo-active #vimeoPlayer {
-  display: block;
-}
-
-.video-player.vimeo-active .player-overlay {
-  display: none;
-}
-
-.player-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  background: linear-gradient(
-    to bottom,
-    #0008 0%,
-    transparent 23%,
-    transparent 55%,
-    #000b 100%
-  );
-  opacity: 1;
-  transition: opacity .3s;
-  pointer-events: none;
-}
-
-.video-player.controls-hidden .player-overlay {
-  opacity: 0;
-}
-
-.player-overlay button,
-.player-overlay input,
-.player-overlay select {
-  pointer-events: auto;
-}
-
-.player-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 16px;
-}
-
-.player-title {
-  color: white;
-  font-size: 14px;
-  font-weight: 600;
-  text-shadow: 0 1px 5px #000;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.speed-indicator {
-  display: none;
-  padding: 6px 10px;
-  border-radius: 7px;
-  color: white;
-  background: #8052d6e8;
-  font-weight: 700;
-  font-size: 13px;
-}
-
-.speed-indicator.visible { display: inline-block; }
-
-.center-controls {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: clamp(12px, 4vw, 35px);
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%,-50%);
-}
-
-.player-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  cursor: pointer;
-  color: white;
-  background: #211a2dcc;
-  transition: background .2s, transform .2s;
-}
-
-.player-button:hover {
-  background: #8052d6;
-  transform: scale(1.06);
-}
-
-.center-button {
-  width: clamp(42px, 6vw, 62px);
-  height: clamp(42px, 6vw, 62px);
-  border-radius: 50%;
-  font-size: clamp(19px, 3vw, 29px);
-  border: 1px solid #ffffff70;
-}
-
-.center-button.main {
-  width: clamp(58px, 8vw, 78px);
-  height: clamp(58px, 8vw, 78px);
-  background: #8052d6e8;
-  font-size: clamp(25px, 4vw, 37px);
-}
-
-.bottom-controls {
-  padding: 10px 14px 12px;
-}
-
-.seek-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-
-#seekBar {
-  width: 100%;
-  height: 5px;
-  accent-color: var(--purple);
-  cursor: pointer;
-}
-
-.time-label {
-  white-space: nowrap;
-  font-size: 12px;
-  color: white;
-  text-shadow: 0 1px 3px #000;
-}
-
-.control-row {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.small-control {
-  min-width: 32px;
-  min-height: 32px;
-  border-radius: 6px;
-  padding: 5px 8px;
-  font-size: 17px;
-}
-
-.control-spacer { flex: 1; }
-
-#volumeBar {
-  width: 85px;
-  accent-color: var(--purple);
-  cursor: pointer;
-}
-
-#playbackSpeed {
-  max-width: 105px;
-  padding: 7px;
-  border-radius: 6px;
-  color: white;
-  background: #211a2d;
-  border: 1px solid #7650c8;
-}
-
-.player-status {
-  margin-top: 12px;
-  color: #c9c3d6;
-  font-size: 13px;
-  line-height: 1.6;
-  overflow-wrap: anywhere;
-}
-
-.anime-details {
-  display: grid;
-  grid-template-columns: 250px minmax(0,1fr);
-  gap: 35px;
-  margin-top: 35px;
-}
-
-.anime-poster {
-  width: 250px;
-  height: 350px;
-  object-fit: cover;
-  border-radius: 10px;
-  box-shadow: 0 10px 30px #844bff33;
-  background: #17131f;
-}
-
-.anime-info h1 {
-  color: #c5a7ff;
-  font-size: 34px;
-  margin: 0 0 15px;
-}
-
-.meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-.meta span {
-  background: #211a2d;
-  color: #e2d5ff;
-  padding: 8px 13px;
-  border: 1px solid #38294b;
-  border-radius: 8px;
-  font-size: 14px;
-}
-
-.description {
-  color: #ccc;
-  line-height: 1.8;
-  margin-bottom: 20px;
-  white-space: pre-line;
-}
-
-.genres { margin-bottom: 20px; }
-
-.genres strong {
-  color: #c5a7ff;
-  margin-right: 10px;
-}
-
-.genre-tag {
-  display: inline-block;
-  padding: 5px 12px;
-  margin: 0 7px 8px 0;
-  border-radius: 7px;
-  background: #844bff29;
-  border: 1px solid #493565;
-  color: #d4c0ff;
-  font-size: 14px;
-}
-
-.action-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 20px;
-}
-
-.btn-favorite, .btn-share {
-  padding: 12px 18px;
-  background: #17131f;
-  color: #d4c0ff;
-  border: 1px solid #7650c8;
-  border-radius: 8px;
-  cursor: pointer;
-}
-
-.btn-favorite:hover,
-.btn-share:hover,
-.btn-favorite.active {
-  background: #8052d6;
-  color: white;
-}
-
-.episodes-section {
-  margin-top: 45px;
-  padding: 28px;
-  background: #121019;
-  border: 1px solid #30243f;
-  border-radius: 14px;
-}
-
-.episodes-section h2 {
-  font-size: 27px;
-  color: #c5a7ff;
-  margin: 0 0 20px;
-}
-
-.episodes-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill,minmax(150px,1fr));
-  gap: 14px;
-  margin-top: 18px;
-}
-
-.episode-card {
-  padding: 15px;
-  text-align: left;
-  background: #1b1724;
-  color: #ddd;
-  border: 1px solid #38294b;
-  border-radius: 9px;
-  cursor: pointer;
-  transition: .2s;
-}
-
-.episode-card:hover,
-.episode-card.active {
-  background: #30213f;
-  border-color: #9669eb;
-  transform: translateY(-2px);
-}
-
-.episode-card strong {
-  display: block;
-  color: #c5a7ff;
-  margin-bottom: 6px;
-}
-
-.episode-card small {
-  display: block;
-  color: #c8bfd6;
-  overflow-wrap: anywhere;
-}
-
-.loading {
-  text-align: center;
-  color: #ccc;
-  padding: 40px 10px;
-}
-
-.error-message {
-  background: #ff6b6b1a;
-  border: 1px solid #ff6b6b;
-  color: #ff8585;
-  padding: 18px;
-  border-radius: 8px;
-}
-
-@media (max-width: 768px) {
-  .watch-container { padding: 20px 12px 35px; }
-  .player-section { padding: 10px; }
-  .player-top { padding: 9px; }
-  .bottom-controls { padding: 5px 7px 8px; }
-  .control-row { gap: 5px; }
-  #volumeBar { width: 55px; }
-  #playbackSpeed { max-width: 76px; font-size: 12px; }
-  .small-control { min-width: 28px; min-height: 28px; padding: 3px; }
-  .anime-details { grid-template-columns: 1fr; gap: 20px; }
-  .anime-poster { width: 100%; max-width: 320px; height: 400px; }
-  .anime-info h1 { font-size: 25px; }
-  .episodes-section { padding: 17px; }
-  .episodes-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 9px; }
-  .episode-card { padding: 12px 9px; }
-  .time-label { font-size: 10px; }
-}
-
-@media (max-width: 400px) {
-  #volumeBar { display: none; }
-  .center-controls { gap: 9px; }
-}
+.anime-details{display:grid;grid-template-columns:250px minmax(0,1fr);gap:35px;margin-top:35px}
+.anime-poster{width:250px;height:350px;object-fit:cover;border-radius:10px;box-shadow:0 10px 30px #844bff33;background:#17131f}
+.anime-info h1{color:#c5a7ff;font-size:34px;margin:0 0 15px}
+.meta{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px}
+.meta span{background:#211a2d;color:#e2d5ff;padding:8px 13px;border:1px solid #38294b;border-radius:8px;font-size:14px}
+.description{color:#ccc;line-height:1.8;margin-bottom:20px;white-space:pre-line}
+.genres{margin-bottom:20px}
+.genres strong{color:#c5a7ff;margin-right:10px}
+.genre-tag{display:inline-block;padding:5px 12px;margin:0 7px 8px 0;border-radius:7px;background:#844bff29;border:1px solid #493565;color:#d4c0ff;font-size:14px}
+.action-buttons{display:flex;flex-wrap:wrap;gap:12px;margin-top:20px}
+.btn-favorite,.btn-share{padding:12px 18px;background:#17131f;color:#d4c0ff;border:1px solid #7650c8;border-radius:8px;cursor:pointer}
+.btn-favorite:hover,.btn-share:hover,.btn-favorite.active{background:#8052d6;color:white}
+.episodes-section{margin-top:45px;padding:28px;background:#121019;border:1px solid #30243f;border-radius:14px}
+.episodes-section h2{font-size:27px;color:#c5a7ff;margin:0 0 20px}
+.episodes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;margin-top:18px}
+.episode-card{padding:15px;text-align:left;background:#1b1724;color:#ddd;border:1px solid #38294b;border-radius:9px;cursor:pointer;transition:.2s}
+.episode-card:hover,.episode-card.active{background:#30213f;border-color:#9669eb;transform:translateY(-2px)}
+.episode-card strong{display:block;color:#c5a7ff;margin-bottom:6px}
+.episode-card small{display:block;color:#c8bfd6;overflow-wrap:anywhere}
+.loading{text-align:center;color:#ccc;padding:40px 10px}
+.error-message{background:#ff6b6b1a;border:1px solid #ff6b6b;color:#ff8585;padding:18px;border-radius:8px}
+@media(max-width:768px){.watch-container{padding:20px 12px 35px}.player-section{padding:10px}.player-top{padding:9px}.bottom-controls{padding:5px 7px 8px}.control-row{gap:5px}#volumeBar{width:55px}#playbackSpeed{max-width:76px;font-size:12px}.small-control{min-width:28px;min-height:28px;padding:3px}.anime-details{grid-template-columns:1fr;gap:20px}.anime-poster{width:100%;max-width:320px;height:400px}.anime-info h1{font-size:25px}.episodes-section{padding:17px}.episodes-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.episode-card{padding:12px 9px}.time-label{font-size:10px}}
+@media(max-width:400px){#volumeBar{display:none}.center-controls{gap:9px}}
 </style>
 </head>
-
 <body>
 <nav class="navbar">
   <div class="container">
     <div class="logo"><h2>🎬 AnimeDekho</h2></div>
     <ul class="nav-links">
       <li><a href="index.html">Home</a></li>
-      <li>
-        <button class="btn-login" onclick="checkLogin()">
-          <span id="userDisplay">Login</span>
-        </button>
-      </li>
+      <li><button class="btn-login" onclick="checkLogin()"><span id="userDisplay">Login</span></button></li>
     </ul>
   </div>
 </nav>
 
 <main class="watch-container">
   <a href="index.html" class="back-button">← Back to Home</a>
-
   <div id="loadingState" class="loading">Loading anime details...</div>
   <div id="errorState" style="display:none"></div>
 
   <div id="animeContent" style="display:none">
     <section class="player-section">
-
       <div id="languageOptions" class="player-options">
         <button class="language-btn active" type="button" data-language="english">English Dub</button>
         <button class="language-btn" type="button" data-language="hindi">Hindi Dub</button>
         <button class="language-btn" type="button" data-language="bangla">Bangla Dub</button>
       </div>
-
+      <div class="player-options player-mode-row">
+        <label for="playerMode">Player Mode:</label>
+        <select id="playerMode" aria-label="Choose video player">
+          <option value="auto" selected>Auto (Recommended)</option>
+          <option value="vimeo">Vimeo / Embed Player</option>
+          <option value="custom">Custom OTT Player</option>
+        </select>
+        <span class="mode-hint">Vimeo has its own player plus an SDK Speed test; direct MP4 / WebM / HLS use Custom OTT controls.</span>
+      </div>
       <div class="player-options">
         <label for="serverSelect">Select Server:</label>
         <select id="serverSelect">
-          <option value="0">Server 1 (Primary)</option>
-          <option value="1">Server 2 (Backup)</option>
-          <option value="2">Server 3 (Backup)</option>
+          <option value="0">Server 1 (Primary)</option><option value="1">Server 2 (Backup)</option><option value="2">Server 3 (Backup)</option>
         </select>
         <span id="serverStatus">Select an episode first</span>
       </div>
 
       <div class="video-player" id="videoPlayerShell">
-        <video id="episodePlayer" playsinline preload="metadata" poster="">
-          Your browser does not support video playback.
-        </video>
-
-        <!-- IMPORTANT: Vimeo iframe is outside the video element -->
-        <iframe
-          id="vimeoPlayer"
-          title="Vimeo video player"
-          allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
-          allowfullscreen
-          referrerpolicy="strict-origin-when-cross-origin"
-        ></iframe>
-
+        <video id="episodePlayer" playsinline preload="metadata" poster="">Your browser does not support video playback.</video>
+        <iframe id="vimeoPlayer" title="Vimeo video player" allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
         <div class="player-overlay" id="playerOverlay">
-          <div class="player-top">
-            <div class="player-title" id="overlayTitle">AnimeDekho</div>
-            <span class="speed-indicator" id="speedIndicator">1×</span>
-          </div>
-
+          <div class="player-top"><div class="player-title" id="overlayTitle">AnimeDekho</div><span class="speed-indicator" id="speedIndicator">1×</span></div>
           <div class="center-controls">
             <button class="player-button center-button" id="centerPrevious" type="button" aria-label="Previous episode" title="Previous episode">⏮</button>
             <button class="player-button center-button main" id="centerPlay" type="button" aria-label="Play" title="Play">▶</button>
             <button class="player-button center-button" id="centerNext" type="button" aria-label="Next episode" title="Next episode">⏭</button>
           </div>
-
           <div class="bottom-controls">
-            <div class="seek-row">
-              <span class="time-label" id="currentTime">0:00</span>
-              <input id="seekBar" type="range" min="0" max="1000" value="0" step="1" aria-label="Seek video">
-              <span class="time-label" id="durationTime">0:00</span>
-            </div>
-
+            <div class="seek-row"><span class="time-label" id="currentTime">0:00</span><input id="seekBar" type="range" min="0" max="1000" value="0" step="1" aria-label="Seek video"><span class="time-label" id="durationTime">0:00</span></div>
             <div class="control-row">
               <button class="player-button small-control" id="playPause" type="button" title="Play/Pause" aria-label="Play/Pause">▶</button>
+              <button class="player-button small-control" id="skipBack10" type="button" title="Back 10 seconds" aria-label="Back 10 seconds">↶10</button>
+              <button class="player-button small-control" id="skipForward10" type="button" title="Forward 10 seconds" aria-label="Forward 10 seconds">10↷</button>
               <button class="player-button small-control" id="previousEpisode" type="button" title="Previous episode" aria-label="Previous episode">⏮</button>
               <button class="player-button small-control" id="nextEpisode" type="button" title="Next episode" aria-label="Next episode">⏭</button>
               <button class="player-button small-control" id="muteButton" type="button" title="Mute" aria-label="Mute">🔊</button>
               <input id="volumeBar" type="range" min="0" max="1" step="0.05" value="1" aria-label="Volume">
-
               <span class="control-spacer"></span>
-
-              <select id="playbackSpeed" aria-label="Playback speed" title="Playback speed">
-                <option value="0.5">0.5×</option>
-                <option value="0.75">0.75×</option>
-                <option value="1" selected>1× Speed</option>
-                <option value="1.25">1.25×</option>
-                <option value="1.5">1.5×</option>
-                <option value="2">2× Speed</option>
-              </select>
-
+              <select id="playbackSpeed" aria-label="Playback speed" title="Playback speed"><option value="0.5">0.5×</option><option value="0.75">0.75×</option><option value="1" selected>1× Speed</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2× Speed</option></select>
+              <button class="player-button small-control" id="pipButton" type="button" title="Picture in Picture" aria-label="Picture in Picture">▣</button>
               <button class="player-button small-control" id="fullscreenButton" type="button" title="Fullscreen" aria-label="Fullscreen">⛶</button>
             </div>
           </div>
         </div>
       </div>
-
+      <nav class="episode-navigation" aria-label="Episode navigation">
+        <button id="externalPreviousEpisode" type="button" disabled aria-label="Play previous episode" title="Previous episode">⏮ <span>Previous</span></button>
+        <div id="externalEpisodeLabel" class="episode-navigation-label" aria-live="polite"><strong>No episode selected</strong><span>Select an episode below to start watching.</span></div>
+        <button id="externalNextEpisode" type="button" disabled aria-label="Play next episode" title="Next episode"><span>Next</span> ⏭</button>
+      </nav>
+      <div class="track-controls" id="mediaTracksPanel" hidden>
+        <label for="subtitleSelect">Subtitles / CC
+          <select id="subtitleSelect" aria-label="Subtitles"><option value="off">Off</option></select>
+        </label>
+        <label for="audioTrackSelect">Audio track
+          <select id="audioTrackSelect" aria-label="Audio track"><option value="auto">Default audio</option></select>
+        </label>
+        <label for="qualitySelect">Video quality
+          <select id="qualitySelect" aria-label="Video quality"><option value="auto">Auto quality</option></select>
+        </label>
+        <button class="player-button small-control" id="loopButton" type="button" title="Loop episode" aria-label="Loop episode">🔁</button>
+        <span id="trackStatus" role="status" aria-live="polite">Audio, subtitle and quality availability depends on the source.</span>
+      </div>
+      <div class="vimeo-control-panel" id="vimeoExternalControls" hidden>
+        <div class="vimeo-control-row">
+          <button id="vimeoPlayPause" type="button" title="Play/Pause">▶ Play</button>
+          <button id="vimeoBack10" type="button" title="Back 10 seconds">↶ 10s</button>
+          <button id="vimeoForward10" type="button" title="Forward 10 seconds">10s ↷</button>
+          <span class="vimeo-note">Vimeo video controls</span>
+        </div>
+        <div class="vimeo-control-row">
+          <span class="vimeo-time" id="vimeoCurrentTime">0:00</span>
+          <input id="vimeoSeekBar" type="range" min="0" max="1000" value="0" step="1" aria-label="Seek Vimeo video">
+          <span class="vimeo-time" id="vimeoDurationTime">0:00</span>
+        </div>
+        <div class="vimeo-control-row">
+          <button id="vimeoMuteButton" type="button" title="Mute">🔊 Mute</button>
+          <label for="vimeoVolumeBar">Volume <input id="vimeoVolumeBar" type="range" min="0" max="1" step="0.05" value="1" aria-label="Vimeo volume"></label>
+          <label for="vimeoPlaybackSpeed">Speed
+            <select id="vimeoPlaybackSpeed" aria-label="Vimeo playback speed">
+              <option value="0.5">0.5×</option><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="1.75">1.75×</option><option value="2">2×</option>
+            </select>
+          </label>
+          <label for="vimeoSubtitleSelect">Captions
+            <select id="vimeoSubtitleSelect" aria-label="Vimeo captions"><option value="off">Off / Default</option></select>
+          </label>
+        </div>
+        <div class="vimeo-control-row">
+          <button id="vimeoFullscreenButton" type="button" title="Fullscreen">⛶ Fullscreen</button>
+          <button id="vimeoLoopButton" type="button" title="Loop episode">🔁 Loop off</button>
+          <span id="vimeoSpeedStatus" role="status" aria-live="polite">Vimeo SDK controls are initializing.</span>
+        </div>
+        <div class="vimeo-note" id="vimeoAudioNote">Audio language/track and quality switching are not exposed by the standard Vimeo Player SDK controls here. Use Vimeo's own settings, or choose another dub from the language buttons above.</div>
+      </div>
       <div class="player-status" id="nowPlaying">Select an episode to start watching.</div>
     </section>
 
     <section class="anime-details">
       <img id="playerPoster" src="" alt="Anime poster" class="anime-poster">
-
       <div class="anime-info">
         <h1 id="animeTitle">Loading...</h1>
-        <div class="meta">
-          <span id="animeRating">⭐ 0</span>
-          <span id="animeYear">2024</span>
-          <span id="animeEpisodes">24 Episodes</span>
-          <span id="animeStatus">Ongoing</span>
-        </div>
-
+        <div class="meta"><span id="animeRating">⭐ 0</span><span id="animeYear">2024</span><span id="animeEpisodes">24 Episodes</span><span id="animeStatus">Ongoing</span></div>
         <div class="description" id="animeDescription">Loading description...</div>
-        <div class="genres" id="genresContainer">
-          <strong>Genres:</strong>
-          <div id="genresList"></div>
-        </div>
-
-        <div class="action-buttons">
-          <button class="btn-favorite" id="btnFavorite" type="button" onclick="toggleFavorite()">♡ Add to Favorites</button>
-          <button class="btn-share" type="button" onclick="shareAnime()">📤 Share</button>
-        </div>
+        <div class="genres" id="genresContainer"><strong>Genres:</strong><div id="genresList"></div></div>
+        <div class="action-buttons"><button class="btn-favorite" id="btnFavorite" type="button" onclick="toggleFavorite()">♡ Add to Favorites</button><button class="btn-share" type="button" onclick="shareAnime()">📤 Share</button></div>
       </div>
     </section>
 
     <section class="episodes-section">
       <h2>Seasons &amp; Episodes</h2>
       <label for="seasonSelect">Select Season:</label>
-      <select id="seasonSelect">
-        <option value="">Loading seasons...</option>
-      </select>
+      <select id="seasonSelect"><option value="">Loading seasons...</option></select>
       <div id="episodeMessage" style="margin-top:12px"></div>
-      <div class="episodes-grid" id="episodesGrid">
-        <p>Loading episodes...</p>
-      </div>
+      <div class="episodes-grid" id="episodesGrid"><p>Loading episodes...</p></div>
     </section>
   </div>
 </main>
-
-<footer>
-  <p style="text-align:center;padding:20px">&copy; 2026 AnimeDekho. All rights reserved.</p>
-</footer>
+<footer><p style="text-align:center;padding:20px">&copy; 2026 AnimeDekho. All rights reserved.</p></footer>
 
 <script src="js/auth.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script src="https://player.vimeo.com/api/player.js"></script>
 <script>
 'use strict';
 
 const API_URL = 'https://animedekhobd.onrender.com/api';
-
 const $ = id => document.getElementById(id);
 const player = $('episodePlayer');
 const shell = $('videoPlayerShell');
-const vimeoFrame = $('vimeoPlayer');
+let vimeoFrame = $('vimeoPlayer'); // Re-created for each episode to avoid stale Vimeo iframe state.
+let hlsInstance = null;
+let vimeoApiPlayer = null;
+let activeEmbedProvider = '';
+let vimeoSpeedRequestId = 0;
+let vimeoCaptionTracks = [];
+let sidecarSubtitleTracks = [];
+let nativeAudioTracks = null;
+let vimeoLastVolume = 1;
+let customLoopEnabled = false;
+let vimeoLoopEnabled = false;
+
+let videoAttemptId = 0;
+let retryTimer = null;
+let vimeoLoadTimer = null;
+let hideControlsTimer = null;
+let speedTimer = null;
+let controlsPinned = false;
+let currentAnime = null;
+let currentEpisodes = [];
+let currentEpisodeIndex = -1;
+let currentLanguage = 'english';
+let currentServerIndex = 0;
+let fallbackAttempts = 0;
+let activeVideoCandidates = [];
+let activeCandidateIndex = -1;
+const MAX_SERVER_ATTEMPTS = 3;
+const VIDEO_START_TIMEOUT = 15000;
+let vimeoInitAttempt = 0;
+
+function clearVimeoLoadTimer() {
+  if (vimeoLoadTimer !== null) {
+    clearTimeout(vimeoLoadTimer);
+    vimeoLoadTimer = null;
+  }
+}
+
+function setVimeoSpeedStatus(message, type = '') {
+  const status = $('vimeoSpeedStatus');
+  status.textContent = message;
+  status.classList.remove('success', 'error');
+  if (type) status.classList.add(type);
+}
+
+function setVimeoSpeedControlsVisible(visible) {
+  $('vimeoExternalControls').hidden = !visible;
+  if (!visible) {
+    $('vimeoPlaybackSpeed').value = '1';
+    $('vimeoSubtitleSelect').innerHTML = '<option value="off">Off / Default</option>';
+    vimeoCaptionTracks = [];
+    $('vimeoPlayPause').textContent = '▶ Play';
+    $('vimeoSeekBar').value = '0';
+    $('vimeoCurrentTime').textContent = '0:00';
+    $('vimeoDurationTime').textContent = '0:00';
+    $('vimeoVolumeBar').value = '1';
+    $('vimeoMuteButton').textContent = '🔊 Mute';
+    setVimeoSpeedStatus('Vimeo SDK controls not active.');
+  }
+}
+
+function releaseVimeoApiPlayer() {
+  vimeoSpeedRequestId++;
+  const oldPlayer = vimeoApiPlayer;
+  vimeoApiPlayer = null;
+  if (oldPlayer && typeof oldPlayer.destroy === 'function') {
+    try {
+      const cleanup = oldPlayer.destroy();
+      if (cleanup && typeof cleanup.catch === 'function') cleanup.catch(() => {});
+    } catch (_) {}
+  }
+}
+
+function destroyVimeoPlayer() {
+  // Important: detach/replace the iframe BEFORE asking the old Vimeo SDK
+  // instance to destroy itself. Player.destroy() can remove its iframe; if it
+  // runs first, the replacement can become detached and the next episode stays
+  // blank until the whole page is refreshed.
+  vimeoInitAttempt++;
+  clearVimeoLoadTimer();
+  const oldFrame = vimeoFrame;
+  const freshFrame = oldFrame.cloneNode(false);
+  freshFrame.onload = null;
+  freshFrame.onerror = null;
+  freshFrame.removeAttribute('src');
+  oldFrame.onload = null;
+  oldFrame.onerror = null;
+  if (oldFrame.parentNode) oldFrame.parentNode.replaceChild(freshFrame, oldFrame);
+  vimeoFrame = freshFrame;
+  // The old frame is now detached, so an asynchronous SDK destroy cannot remove
+  // the new iframe that will host the next episode.
+  oldFrame.removeAttribute('src');
+  releaseVimeoApiPlayer();
+  if (hlsInstance) { try { hlsInstance.destroy(); } catch (_) {} hlsInstance = null; }
+  shell.classList.remove('vimeo-active');
+  activeEmbedProvider = '';
+  setVimeoSpeedControlsVisible(false);
+}
+
+function updateVimeoTimeline(data = {}) {
+  const duration = Number(data.duration || vimeoKnownDuration || 0);
+  const current = Number(data.seconds ?? data.currentTime ?? 0);
+  if (Number.isFinite(duration) && duration > 0) vimeoKnownDuration = duration;
+  $('vimeoCurrentTime').textContent = formatTime(current);
+  $('vimeoDurationTime').textContent = formatTime(Number.isFinite(duration) && duration > 0 ? duration : vimeoKnownDuration);
+  const safeDuration = Number.isFinite(duration) && duration > 0 ? duration : vimeoKnownDuration;
+  $('vimeoSeekBar').value = safeDuration > 0 ? String(Math.round((current / safeDuration) * 1000)) : '0';
+}
+let vimeoKnownDuration = 0;
+
+async function populateVimeoCaptions(sdkPlayer) {
+  const select = $('vimeoSubtitleSelect');
+  select.innerHTML = '<option value="off">Off / Default</option>';
+  vimeoCaptionTracks = [];
+  try {
+    const tracks = await sdkPlayer.getTextTracks();
+    if (!Array.isArray(tracks) || !tracks.length) {
+      select.innerHTML = '<option value="off">No caption tracks found</option>';
+      setVimeoSpeedStatus('Vimeo SDK connected. This video exposes no selectable caption tracks.');
+      return;
+    }
+    tracks.forEach((track, index) => {
+      const item = { language: track.language, kind: track.kind || 'captions', label: track.label || track.language || `Caption ${index + 1}` };
+      vimeoCaptionTracks.push(item);
+      const option = document.createElement('option');
+      option.value = String(index);
+      option.textContent = `${item.label}${item.language ? ` (${item.language})` : ''}`;
+      select.appendChild(option);
+    });
+    setVimeoSpeedStatus('Vimeo SDK connected. Play/Pause, seek, volume and available captions are ready. Speed may require a paid plan.');
+  } catch (error) {
+    console.warn('Could not retrieve Vimeo text tracks:', error);
+    select.innerHTML = '<option value="off">Use Vimeo caption settings</option>';
+  }
+}
+
+async function initializeVimeoExternalControls(sdkPlayer, initId, attemptId) {
+  vimeoKnownDuration = 0;
+  sdkPlayer.on('timeupdate', data => {
+    if (initId !== vimeoInitAttempt || attemptId !== videoAttemptId) return;
+    updateVimeoTimeline(data || {});
+  });
+  sdkPlayer.on('loaded', async () => {
+    if (initId !== vimeoInitAttempt || attemptId !== videoAttemptId) return;
+    try { vimeoKnownDuration = await sdkPlayer.getDuration(); } catch (_) {}
+    try { updateVimeoTimeline({seconds: await sdkPlayer.getCurrentTime(), duration: vimeoKnownDuration}); } catch (_) {}
+  });
+  sdkPlayer.on('play', () => { if (initId === vimeoInitAttempt && attemptId === videoAttemptId) $('vimeoPlayPause').textContent = '❚❚ Pause'; });
+  sdkPlayer.on('pause', () => { if (initId === vimeoInitAttempt && attemptId === videoAttemptId) $('vimeoPlayPause').textContent = '▶ Play'; });
+  sdkPlayer.on('ended', () => {
+    if (initId !== vimeoInitAttempt || attemptId !== videoAttemptId || vimeoLoopEnabled) return;
+    if (currentEpisodeIndex < currentEpisodes.length - 1) goToEpisode(currentEpisodeIndex + 1);
+    else setStatus('এই Season-এর শেষ Episode শেষ হয়েছে।');
+  });
+  sdkPlayer.on('volumechange', data => {
+    if (initId !== vimeoInitAttempt || attemptId !== videoAttemptId) return;
+    const volume = Number(data?.volume);
+    if (Number.isFinite(volume)) {
+      $('vimeoVolumeBar').value = String(volume);
+      if (volume > 0) vimeoLastVolume = volume;
+      $('vimeoMuteButton').textContent = volume <= 0 ? '🔇 Unmute' : '🔊 Mute';
+    }
+  });
+  sdkPlayer.on('texttrackchange', data => {
+    if (initId !== vimeoInitAttempt || attemptId !== videoAttemptId) return;
+    const active = data?.language;
+    const found = vimeoCaptionTracks.findIndex(item => item.language === active && (!data?.kind || item.kind === data.kind));
+    $('vimeoSubtitleSelect').value = found >= 0 ? String(found) : 'off';
+  });
+  Promise.allSettled([sdkPlayer.getDuration(), sdkPlayer.getCurrentTime(), sdkPlayer.getPaused(), sdkPlayer.getVolume()]).then(results => {
+    if (initId !== vimeoInitAttempt || attemptId !== videoAttemptId) return;
+    const [duration, current, paused, volume] = results;
+    if (duration.status === 'fulfilled') vimeoKnownDuration = duration.value;
+    if (current.status === 'fulfilled') updateVimeoTimeline({seconds: current.value, duration: vimeoKnownDuration});
+    if (paused.status === 'fulfilled') $('vimeoPlayPause').textContent = paused.value ? '▶ Play' : '❚❚ Pause';
+    if (volume.status === 'fulfilled') {
+      $('vimeoVolumeBar').value = String(volume.value);
+      if (volume.value > 0) vimeoLastVolume = volume.value;
+      $('vimeoMuteButton').textContent = volume.value <= 0 ? '🔇 Unmute' : '🔊 Mute';
+    }
+  });
+  try { vimeoLoopEnabled = await sdkPlayer.getLoop(); $('vimeoLoopButton').textContent = vimeoLoopEnabled ? '🔁 Loop on' : '🔁 Loop off'; } catch (_) { vimeoLoopEnabled = false; }
+  populateVimeoCaptions(sdkPlayer);
+}
+
+async function connectVimeoSdk(initId, attemptId) {
+  if (!window.Vimeo || typeof window.Vimeo.Player !== 'function') {
+    setVimeoSpeedStatus('Vimeo SDK script লোড হয়নি। Vimeo-এর নিজস্ব player controls ব্যবহার করো.', 'error');
+    return;
+  }
+  let sdkPlayer;
+  try {
+    sdkPlayer = new window.Vimeo.Player(vimeoFrame);
+    vimeoApiPlayer = sdkPlayer;
+    await sdkPlayer.ready();
+    if (initId !== vimeoInitAttempt || attemptId !== videoAttemptId || vimeoApiPlayer !== sdkPlayer) {
+      try { await sdkPlayer.destroy(); } catch (_) {}
+      return;
+    }
+    initializeVimeoExternalControls(sdkPlayer, initId, attemptId);
+    try {
+      const rate = await sdkPlayer.getPlaybackRate();
+      if (initId !== vimeoInitAttempt || attemptId !== videoAttemptId) return;
+      $('vimeoPlaybackSpeed').value = String(rate);
+      setVimeoSpeedStatus(`Vimeo SDK connected. Current rate: ${rate}×. Speed change will be tested when selected.`);
+    } catch (error) {
+      console.warn('Vimeo getPlaybackRate unavailable:', error);
+      setVimeoSpeedStatus('SDK connected, কিন্তু বর্তমান speed পড়া যায়নি। Speed নির্বাচন করে পরীক্ষা করো.');
+    }
+  } catch (error) {
+    console.warn('Vimeo SDK initialization failed:', error);
+    if (initId === vimeoInitAttempt && attemptId === videoAttemptId) {
+      setVimeoSpeedStatus('Vimeo SDK initialize হয়নি। Vimeo player-এর নিজস্ব controls ব্যবহার করো.', 'error');
+    }
+  }
+}
+
+function initializeVimeoPlayer(embedUrl, attemptId, episodeLabel) {
+  const initId = ++vimeoInitAttempt;
+  clearVimeoLoadTimer();
+
+  // Vimeo's native controls run inside the iframe. They do not require the Player SDK.
+  vimeoFrame.onload = () => {
+    if (initId !== vimeoInitAttempt || attemptId !== videoAttemptId) return;
+    clearVimeoLoadTimer();
+    $('serverStatus').textContent = 'Vimeo Player Loaded';
+    setStatus(`${episodeLabel} — embedded player opened`);
+    setMessage('Vimeo player opened. নিচের আলাদা Speed selector SDK দিয়ে চেষ্টা করবে; Free plan বা video settings অনুমতি না দিলে কাজ নাও করতে পারে।');
+    if (activeEmbedProvider === 'Vimeo') connectVimeoSdk(initId, attemptId);
+  };
+
+  vimeoFrame.onerror = () => {
+    if (initId !== vimeoInitAttempt || attemptId !== videoAttemptId) return;
+    clearVimeoLoadTimer();
+    $('serverStatus').textContent = 'Vimeo Load Error';
+    setStatus(`${episodeLabel} — embedded player load failed`);
+    setMessage('Embed লোড হয়নি। URL, internet connection এবং provider-এর privacy/embed settings পরীক্ষা করো।');
+  };
+
+  // Avoid an endless "Opening Episode..." message if Vimeo is slow or blocked.
+  vimeoLoadTimer = setTimeout(() => {
+    if (initId !== vimeoInitAttempt || attemptId !== videoAttemptId) return;
+    $('serverStatus').textContent = 'Vimeo is taking longer to load';
+    setStatus(`${episodeLabel} — embed is still loading`);
+    setMessage('Embed উত্তর দিচ্ছে না। URL এবং provider-এর embedding permission পরীক্ষা করো।');
+  }, 15000);
+
+  // Setting src after the handlers ensures the first iframe load can be observed.
+  // Keep the Vimeo iframe as the source of playback even if the optional SDK fails.
+  // This URL assignment must happen only after the fresh iframe is attached to the DOM.
+  if (!vimeoFrame.isConnected) {
+    const currentFrame = $('vimeoPlayer');
+    if (currentFrame && currentFrame !== vimeoFrame) vimeoFrame = currentFrame;
+    if (!vimeoFrame.isConnected) shell.appendChild(vimeoFrame);
+  }
+  vimeoFrame.src = embedUrl;
+}
 
 function getVimeoEmbedUrl(rawUrl) {
   try {
-    const url = new URL(rawUrl);
+    const url = new URL(String(rawUrl).trim());
     const host = url.hostname.toLowerCase();
-
-    if (host !== 'vimeo.com' && !host.endsWith('.vimeo.com')) {
-      return null;
-    }
+    if (!['vimeo.com', 'www.vimeo.com', 'player.vimeo.com'].includes(host)) return null;
 
     const parts = url.pathname.split('/').filter(Boolean);
     let videoId = '';
+    let privacyHash = url.searchParams.get('h') || '';
 
     if (host === 'player.vimeo.com' && parts[0] === 'video') {
       videoId = parts[1] || '';
-    } else if (host === 'vimeo.com') {
+    } else {
       videoId = parts[0] || '';
+      // Preserve unlisted-video hashes found in the path or ?h= query.
+      if (!privacyHash && parts[1] && !/^\d+$/.test(parts[1])) privacyHash = parts[1];
     }
 
     if (!/^\d+$/.test(videoId)) return null;
 
+    // Mobile browsers can block autoplay-with-sound and some inline player controls
+    // behave poorly on certain devices. On touch devices, let Vimeo enter fullscreen
+    // after the viewer taps its own Play button. Desktop behavior stays unchanged.
+    const isTouchDevice =
+      (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) ||
+      /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
     const embed = new URL(`https://player.vimeo.com/video/${videoId}`);
-
-    // Preserve the privacy hash used by unlisted Vimeo videos.
-    const hash = url.searchParams.get('h');
-    if (hash) embed.searchParams.set('h', hash);
-
-    embed.searchParams.set('autoplay', '1');
+    if (privacyHash) embed.searchParams.set('h', privacyHash);
+    embed.searchParams.set('autoplay', '0');
     embed.searchParams.set('controls', '1');
     embed.searchParams.set('playsinline', '1');
-
+    embed.searchParams.set('speed', '1');
+    // Keep normal player behavior/cookies for the embed; this is not chromeless mode.
+    embed.searchParams.set('dnt', '0');
+    embed.searchParams.set('preload', 'auto');
     return embed.toString();
-  } catch {
+  } catch (error) {
+    console.error('Vimeo URL error:', error);
     return null;
   }
 }
-
-let currentAnime = null;
-let currentEpisodes = [];
-let currentLanguage = 'english';
-let currentEpisodeIndex = -1;
-let currentServerIndex = 0;
-
-let activeVideoCandidates = [];
-let activeCandidateIndex = -1;
-let videoAttemptId = 0;
-let retryTimer = null;
-let hideControlsTimer = null;
-let speedTimer = null;
-let controlsPinned = false;
-let fallbackAttempts = 0;
-
-const MAX_SERVER_ATTEMPTS = 3;
-const VIDEO_START_TIMEOUT = 10000;
 
 function getAnimeIdFromURL() {
   return new URLSearchParams(window.location.search).get('id');
@@ -683,126 +566,430 @@ function getAnimeIdFromURL() {
 
 function formatTime(seconds) {
   if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
-
   seconds = Math.floor(seconds);
-
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
   const s = seconds % 60;
-
-  if (h > 0) {
-    return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-  }
-
+  if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
   return `${m}:${String(s).padStart(2,'0')}`;
 }
-
-function setStatus(text) {
-  $('nowPlaying').textContent = text;
-}
-
-function setMessage(text) {
-  $('episodeMessage').textContent = text;
-}
-
+function setStatus(text) { $('nowPlaying').textContent = text; }
+function setMessage(text) { $('episodeMessage').textContent = text; }
 function clearRetryTimer() {
-  if (retryTimer !== null) {
-    clearTimeout(retryTimer);
-    retryTimer = null;
+  if (retryTimer !== null) { clearTimeout(retryTimer); retryTimer = null; }
+}
+
+function clearCustomTrackElements() {
+  player.querySelectorAll('track[data-anime-sidecar="true"]').forEach(track => track.remove());
+  sidecarSubtitleTracks = [];
+  nativeAudioTracks = null;
+  $('subtitleSelect').innerHTML = '<option value="off">Off</option>';
+  $('audioTrackSelect').innerHTML = '<option value="auto">Default audio</option>';
+  $('qualitySelect').innerHTML = '<option value="auto">Auto quality</option>';
+  $('qualitySelect').disabled = true;
+  $('trackStatus').textContent = 'Audio, subtitle and quality availability depends on the source.';
+}
+
+function collectSubtitleSources(episode) {
+  const results = [];
+  const seen = new Set();
+  const add = (raw, label, language, kind='subtitles') => {
+    if (typeof raw === 'object' && raw) {
+      const obj = raw;
+      add(obj.url || obj.src || obj.file || obj.subtitleUrl, obj.label || obj.name || label, obj.language || obj.lang || language, obj.kind || kind);
+      return;
+    }
+    if (typeof raw !== 'string' || !raw.trim()) return;
+    const value = raw.trim();
+    let url;
+    try { url = new URL(value, window.location.href).href; } catch (_) { return; }
+    if (!/^https?:/i.test(url) || seen.has(url)) return;
+    // Browsers natively support WebVTT (.vtt) for <track>; SRT needs conversion first.
+    if (/\.srt(?:$|[?#])/i.test(url)) return;
+    seen.add(url);
+    results.push({url, label: label || language || `Subtitle ${results.length + 1}`, language: language || 'und', kind: kind || 'subtitles'});
+  };
+  if (!episode || typeof episode !== 'object') return results;
+  add(episode.subtitleUrl || episode.subtitleURL, episode.subtitleLabel || `${currentLanguage} subtitles`, episode.subtitleLanguage || currentLanguage);
+  const subtitleUrls = episode.subtitleUrls;
+  if (typeof subtitleUrls === 'string') add(subtitleUrls, `${currentLanguage} subtitles`, currentLanguage);
+  else if (Array.isArray(subtitleUrls)) subtitleUrls.forEach((item, i) => add(item, `Subtitle ${i+1}`, currentLanguage));
+  else if (subtitleUrls && typeof subtitleUrls === 'object') {
+    Object.entries(subtitleUrls).forEach(([lang, item]) => {
+      if (Array.isArray(item)) item.forEach((entry, i) => add(entry, `${lang} subtitle ${i+1}`, lang));
+      else add(item, `${lang} subtitles`, lang);
+    });
+  }
+  const subtitles = episode.subtitles;
+  if (Array.isArray(subtitles)) subtitles.forEach((item, i) => add(item, item?.label || `Subtitle ${i+1}`, item?.language || currentLanguage, item?.kind || 'subtitles'));
+  else if (subtitles && typeof subtitles === 'object') {
+    if (subtitles.url || subtitles.src || subtitles.file) add(subtitles, subtitles.label, subtitles.language || currentLanguage, subtitles.kind || 'subtitles');
+    else Object.entries(subtitles).forEach(([lang, item]) => add(item, `${lang} subtitles`, lang));
+  }
+  const serverList = Array.isArray(episode.videoServers?.[currentLanguage]) ? episode.videoServers[currentLanguage] : [];
+  serverList.forEach((server, i) => {
+    add(server?.subtitleUrl || server?.subtitleURL, server?.subtitleLabel || `Server ${i+1} subtitles`, server?.subtitleLanguage || currentLanguage);
+    const sv = server?.subtitles;
+    if (Array.isArray(sv)) sv.forEach(item => add(item, item?.label, item?.language || currentLanguage));
+    else if (sv && typeof sv === 'object') Object.entries(sv).forEach(([lang, item]) => add(item, `${lang} subtitles`, lang));
+  });
+  return results;
+}
+
+function refreshSubtitleOptions() {
+  const select = $('subtitleSelect');
+  const oldValue = select.value;
+  select.innerHTML = '<option value="off">Off</option>';
+  sidecarSubtitleTracks.forEach((item, index) => {
+    const option = document.createElement('option');
+    option.value = `sidecar:${index}`;
+    option.textContent = `${item.label}${item.language && item.language !== 'und' ? ` (${item.language})` : ''}`;
+    select.appendChild(option);
+  });
+  if (hlsInstance && Array.isArray(hlsInstance.subtitleTracks)) {
+    hlsInstance.subtitleTracks.forEach((item, index) => {
+      const option = document.createElement('option');
+      option.value = `hls:${index}`;
+      option.textContent = `${item.name || item.text || item.lang || `HLS Subtitle ${index+1}`}${item.lang ? ` (${item.lang})` : ''}`;
+      select.appendChild(option);
+    });
+  }
+  if ([...select.options].some(option => option.value === oldValue)) select.value = oldValue;
+  if (sidecarSubtitleTracks.length === 0 && !(hlsInstance && hlsInstance.subtitleTracks?.length)) {
+    $('trackStatus').textContent = 'কোনো subtitle track পাওয়া যায়নি। Admin-এ WebVTT (.vtt) subtitle URL যোগ করো অথবা HLS playlist-এ subtitles রাখতে হবে।';
+  } else {
+    $('trackStatus').textContent = 'Subtitle track ready. Dropdown থেকে ভাষা নির্বাচন করো।';
   }
 }
+
+function refreshAudioOptions() {
+  const select = $('audioTrackSelect');
+  const oldValue = select.value;
+  select.innerHTML = '<option value="auto">Auto / Default</option>';
+  let count = 0;
+  if (hlsInstance && Array.isArray(hlsInstance.audioTracks) && hlsInstance.audioTracks.length) {
+    hlsInstance.audioTracks.forEach((item, index) => {
+      const option = document.createElement('option');
+      option.value = `hls:${index}`;
+      option.textContent = `${item.name || item.lang || `Audio ${index+1}`}${item.lang ? ` (${item.lang})` : ''}`;
+      select.appendChild(option); count++;
+    });
+  } else {
+    try {
+      nativeAudioTracks = player.audioTracks || null;
+      if (nativeAudioTracks && nativeAudioTracks.length) {
+        for (let i=0;i<nativeAudioTracks.length;i++) {
+          const item = nativeAudioTracks[i];
+          const option = document.createElement('option');
+          option.value = `native:${i}`;
+          option.textContent = item.label || item.language || `Audio ${i+1}`;
+          select.appendChild(option); count++;
+        }
+      }
+    } catch (_) { nativeAudioTracks = null; }
+  }
+  if ([...select.options].some(option => option.value === oldValue)) select.value = oldValue;
+  select.disabled = count === 0;
+  $('trackStatus').textContent = count ? 'Audio track selector ready. Availability depends on the video source.' : 'এই source-এ selectable audio track নেই। MP4-এর একাধিক audio track সাধারণ Chrome-এ expose নাও হতে পারে; HLS হলে alternate audio playlist লাগবে।';
+}
+
+function refreshQualityOptions() {
+  const select = $('qualitySelect');
+  const oldValue = select.value || 'auto';
+  select.innerHTML = '<option value="auto">Auto quality</option>';
+  if (hlsInstance && Array.isArray(hlsInstance.levels) && hlsInstance.levels.length) {
+    hlsInstance.levels.forEach((level, index) => {
+      const option = document.createElement('option');
+      option.value = String(index);
+      const height = level.height ? `${level.height}p` : `Level ${index + 1}`;
+      const bitrate = level.bitrate ? ` · ${Math.round(level.bitrate / 1000)} kbps` : '';
+      option.textContent = `${height}${bitrate}`;
+      select.appendChild(option);
+    });
+    select.disabled = false;
+    if ([...select.options].some(option => option.value === oldValue)) select.value = oldValue;
+    $('trackStatus').textContent = 'HLS quality selector ready.';
+  } else {
+    select.disabled = true;
+    $('trackStatus').textContent = 'এই source-এ manual quality নির্বাচন নেই। HLS multi-quality playlist ব্যবহার করলে quality selector চালু হবে।';
+  }
+}
+$('qualitySelect').addEventListener('change', () => {
+  if (!hlsInstance) return;
+  const value = $('qualitySelect').value;
+  hlsInstance.currentLevel = value === 'auto' ? -1 : Number(value);
+  $('trackStatus').textContent = value === 'auto' ? 'Video quality: Auto.' : `Video quality changed to ${$('qualitySelect').selectedOptions[0]?.textContent || value}.`;
+});
+
+function installSidecarSubtitles(episode) {
+  clearCustomTrackElements();
+  const sources = collectSubtitleSources(episode);
+  sources.forEach((source, index) => {
+    const track = document.createElement('track');
+    track.kind = ['captions','subtitles','descriptions','chapters','metadata'].includes(source.kind) ? source.kind : 'subtitles';
+    track.label = source.label;
+    track.srclang = /^[a-z]{2,3}(-[A-Za-z0-9]+)?$/.test(source.language) ? source.language : 'en';
+    track.src = source.url;
+    track.dataset.animeSidecar = 'true';
+    track.addEventListener('error', () => { $('trackStatus').textContent = `Subtitle load failed: ${source.label}. URL/CORS/format পরীক্ষা করো।`; });
+    player.appendChild(track);
+    sidecarSubtitleTracks.push({ ...source, element: track, index });
+  });
+  $('mediaTracksPanel').hidden = false;
+  refreshSubtitleOptions();
+  refreshAudioOptions();
+  refreshQualityOptions();
+}
+
+$('subtitleSelect').addEventListener('change', () => {
+  const value = $('subtitleSelect').value;
+  try {
+    if (hlsInstance) hlsInstance.subtitleTrack = -1;
+    player.querySelectorAll('track[data-anime-sidecar="true"]').forEach(track => { try { track.track.mode = 'disabled'; } catch (_) {} });
+    if (value.startsWith('sidecar:')) {
+      const index = Number(value.split(':')[1]);
+      const item = sidecarSubtitleTracks[index];
+      if (item?.element?.track) { item.element.track.mode = 'showing'; $('trackStatus').textContent = `Subtitle: ${item.label}`; }
+    } else if (value.startsWith('hls:') && hlsInstance) {
+      hlsInstance.subtitleTrack = Number(value.split(':')[1]);
+      $('trackStatus').textContent = 'HLS subtitle track selected.';
+    } else {
+      $('trackStatus').textContent = 'Subtitles off.';
+    }
+  } catch (error) { console.warn('Subtitle track change failed:', error); $('trackStatus').textContent = 'এই browser/source-এ subtitle track পরিবর্তন করা যায়নি।'; }
+});
+
+$('audioTrackSelect').addEventListener('change', () => {
+  const value = $('audioTrackSelect').value;
+  try {
+    if (value === 'auto') {
+      if (hlsInstance) hlsInstance.audioTrack = -1;
+      else if (nativeAudioTracks) for (let i=0;i<nativeAudioTracks.length;i++) nativeAudioTracks[i].enabled = i === 0;
+      $('trackStatus').textContent = 'Default/automatic audio selected.';
+    } else if (value.startsWith('hls:') && hlsInstance) {
+      hlsInstance.audioTrack = Number(value.split(':')[1]);
+      $('trackStatus').textContent = 'HLS audio track changed.';
+    } else if (value.startsWith('native:') && nativeAudioTracks) {
+      const target = Number(value.split(':')[1]);
+      for (let i=0;i<nativeAudioTracks.length;i++) nativeAudioTracks[i].enabled = i === target;
+      $('trackStatus').textContent = 'Audio track changed.';
+    }
+  } catch (error) { console.warn('Audio track change failed:', error); $('trackStatus').textContent = 'এই browser/source-এ audio track change সমর্থিত নয়।'; }
+});
+
+function seekCustomBy(seconds) {
+  if (shell.classList.contains('vimeo-active') || !Number.isFinite(player.duration)) return;
+  player.currentTime = Math.max(0, Math.min(player.duration, player.currentTime + seconds));
+  showControls();
+}
+$('skipBack10').addEventListener('click', () => seekCustomBy(-10));
+$('skipForward10').addEventListener('click', () => seekCustomBy(10));
+$('pipButton').addEventListener('click', async () => {
+  try {
+    if (shell.classList.contains('vimeo-active')) { setStatus('Vimeo Picture-in-Picture নিজস্ব player ও browser support-এর ওপর নির্ভর করে। Vimeo controls ব্যবহার করো।'); return; }
+    if (document.pictureInPictureElement) await document.exitPictureInPicture();
+    else if (document.pictureInPictureEnabled && player.requestPictureInPicture) await player.requestPictureInPicture();
+    else setStatus('এই browser/source Picture-in-Picture support করে না।');
+  } catch (error) { console.warn('Picture in Picture failed:', error); setStatus('Picture-in-Picture চালু করা যায়নি।'); }
+});
+
+$('vimeoPlayPause').addEventListener('click', async () => {
+  if (!vimeoApiPlayer) return setVimeoSpeedStatus('Vimeo SDK ready নয়।', 'error');
+  try {
+    if (await vimeoApiPlayer.getPaused()) await vimeoApiPlayer.play();
+    else await vimeoApiPlayer.pause();
+  } catch (error) { setVimeoSpeedStatus('Vimeo play/pause request failed. Vimeo-এর ভিতরের controls ব্যবহার করো.', 'error'); }
+});
+async function seekVimeoBy(seconds) {
+  if (!vimeoApiPlayer) return;
+  try {
+    const current = await vimeoApiPlayer.getCurrentTime();
+    const duration = await vimeoApiPlayer.getDuration();
+    await vimeoApiPlayer.setCurrentTime(Math.max(0, Math.min(duration, current + seconds)));
+  } catch (error) { setVimeoSpeedStatus('Vimeo seek control এই মুহূর্তে কাজ করেনি.', 'error'); }
+}
+$('vimeoBack10').addEventListener('click', () => seekVimeoBy(-10));
+$('vimeoForward10').addEventListener('click', () => seekVimeoBy(10));
+$('vimeoSeekBar').addEventListener('change', async () => {
+  if (!vimeoApiPlayer || vimeoKnownDuration <= 0) return;
+  try { await vimeoApiPlayer.setCurrentTime((Number($('vimeoSeekBar').value) / 1000) * vimeoKnownDuration); }
+  catch (error) { setVimeoSpeedStatus('Vimeo seek কাজ করেনি; Vimeo-এর নিজস্ব seek bar ব্যবহার করো.', 'error'); }
+});
+$('vimeoVolumeBar').addEventListener('input', async () => {
+  if (!vimeoApiPlayer) return;
+  const volume = Number($('vimeoVolumeBar').value);
+  try { await vimeoApiPlayer.setVolume(volume); if (volume > 0) vimeoLastVolume = volume; }
+  catch (error) { setVimeoSpeedStatus('Mobile browser volume system control দিয়ে নিয়ন্ত্রিত হতে পারে.', 'error'); }
+});
+$('vimeoMuteButton').addEventListener('click', async () => {
+  if (!vimeoApiPlayer) return;
+  try {
+    const volume = await vimeoApiPlayer.getVolume();
+    if (volume > 0) { vimeoLastVolume = volume; await vimeoApiPlayer.setVolume(0); }
+    else await vimeoApiPlayer.setVolume(vimeoLastVolume || 1);
+  } catch (error) { setVimeoSpeedStatus('Vimeo mute toggle কাজ করেনি; Vimeo-এর own controls ব্যবহার করো.', 'error'); }
+});
+$('vimeoSubtitleSelect').addEventListener('change', async () => {
+  if (!vimeoApiPlayer) return;
+  const value = $('vimeoSubtitleSelect').value;
+  try {
+    if (value === 'off') await vimeoApiPlayer.disableTextTrack();
+    else {
+      const item = vimeoCaptionTracks[Number(value)];
+      if (!item) return;
+      await vimeoApiPlayer.enableTextTrack(item.language, item.kind, item.label);
+    }
+    setVimeoSpeedStatus(value === 'off' ? 'Vimeo captions disabled.' : 'Vimeo caption track selected.');
+  } catch (error) {
+    console.warn('Vimeo caption control failed:', error);
+    setVimeoSpeedStatus('এই ভিডিওতে SDK দিয়ে captions পরিবর্তন করা গেল না। Vimeo-এর নিজস্ব captions/settings ব্যবহার করো.', 'error');
+  }
+});
+$('vimeoLoopButton').addEventListener('click', async () => {
+  if (!vimeoApiPlayer) return;
+  try {
+    vimeoLoopEnabled = !vimeoLoopEnabled;
+    await vimeoApiPlayer.setLoop(vimeoLoopEnabled);
+    $('vimeoLoopButton').textContent = vimeoLoopEnabled ? '🔁 Loop on' : '🔁 Loop off';
+    setVimeoSpeedStatus(vimeoLoopEnabled ? 'Vimeo loop enabled.' : 'Vimeo loop disabled.');
+  } catch (error) {
+    vimeoLoopEnabled = false;
+    $('vimeoLoopButton').textContent = '🔁 Loop off';
+    setVimeoSpeedStatus('Vimeo loop control is unavailable for this video.', 'error');
+  }
+});
+
+$('vimeoFullscreenButton').addEventListener('click', async () => {
+  try {
+    if (document.fullscreenElement) await document.exitFullscreen();
+    else if (vimeoFrame.requestFullscreen) await vimeoFrame.requestFullscreen();
+    else setVimeoSpeedStatus('এই browser-এ Vimeo fullscreen নিজের player controls থেকে চালু করো.');
+  } catch (error) { setVimeoSpeedStatus('Fullscreen blocked; Vimeo-এর own fullscreen control ব্যবহার করো.', 'error'); }
+});
 
 function resetPlayerForEpisode() {
   clearRetryTimer();
-
+  player.onerror = null;
   player.pause();
   player.removeAttribute('src');
+  player.querySelectorAll('track[data-anime-sidecar="true"]').forEach(track => track.remove());
   player.load();
-
-  vimeoFrame.onload = null;
-  vimeoFrame.removeAttribute('src');
-  shell.classList.remove('vimeo-active');
-
+  destroyVimeoPlayer();
+  $('mediaTracksPanel').hidden = true;
+  clearCustomTrackElements();
   $('seekBar').value = 0;
   $('currentTime').textContent = '0:00';
   $('durationTime').textContent = '0:00';
-
   updatePlayButtons();
 }
 
 function showControls() {
-  // The Vimeo player has its own controls.
   if (shell.classList.contains('vimeo-active')) return;
-
   shell.classList.remove('controls-hidden');
   clearTimeout(hideControlsTimer);
-
   if (!player.paused && !controlsPinned) {
     hideControlsTimer = setTimeout(() => {
-      if (!player.paused && !controlsPinned) {
-        shell.classList.add('controls-hidden');
-      }
+      if (!player.paused && !controlsPinned) shell.classList.add('controls-hidden');
     }, 3000);
   }
 }
-
 function hideControlsIfNeeded() {
   if (shell.classList.contains('vimeo-active')) return;
-
-  if (!player.paused && !controlsPinned) {
-    shell.classList.add('controls-hidden');
-  }
+  if (!player.paused && !controlsPinned) shell.classList.add('controls-hidden');
 }
-
 function flashSpeedIndicator() {
   const indicator = $('speedIndicator');
   indicator.textContent = `${player.playbackRate}×`;
   indicator.classList.add('visible');
-
   clearTimeout(speedTimer);
-  speedTimer = setTimeout(() => {
-    indicator.classList.remove('visible');
-  }, 1800);
+  speedTimer = setTimeout(() => indicator.classList.remove('visible'), 1800);
 }
-
 function updatePlayButtons() {
   const playing = !player.paused && !player.ended;
   $('playPause').textContent = playing ? '❚❚' : '▶';
   $('centerPlay').textContent = playing ? '❚❚' : '▶';
   $('centerPlay').setAttribute('aria-label', playing ? 'Pause' : 'Play');
 }
-
 function togglePlayback() {
-  // The custom HTML5 controls cannot control a cross-origin Vimeo iframe.
   if (shell.classList.contains('vimeo-active')) {
-    setStatus('Vimeo চলছে: Vimeo-এর নিজস্ব Play/Pause controls ব্যবহার করো।');
+    $('vimeoPlayPause').click();
     return;
   }
-
   if (!player.currentSrc && !player.src) {
-    if (currentEpisodeIndex < 0 && currentEpisodes.length) {
-      playEpisode(0);
-    }
+    if (currentEpisodeIndex < 0 && currentEpisodes.length) playEpisode(0);
     return;
   }
-
   if (player.paused) {
     player.play().catch(err => {
       console.warn('Playback could not start:', err);
       setStatus('Play বাটন চাপ দিয়ে আবার চেষ্টা করো।');
     });
-  } else {
-    player.pause();
+  } else player.pause();
+}
+function updateEpisodeNavigation() {
+  const previousButtons = [$('centerPrevious'), $('previousEpisode'), $('externalPreviousEpisode')];
+  const nextButtons = [$('centerNext'), $('nextEpisode'), $('externalNextEpisode')];
+  const seasonSelect = $('seasonSelect');
+  const hasSelectedEpisode = currentEpisodeIndex >= 0 && currentEpisodeIndex < currentEpisodes.length;
+  const seasonIndex = seasonSelect ? seasonSelect.selectedIndex : -1;
+  const hasPreviousEpisode = hasSelectedEpisode && (currentEpisodeIndex > 0 || seasonIndex > 0);
+  const hasNextEpisode = hasSelectedEpisode && (currentEpisodeIndex < currentEpisodes.length - 1 || (seasonSelect && seasonIndex >= 0 && seasonIndex < seasonSelect.options.length - 1));
+  previousButtons.forEach(button => { if (button) button.disabled = !hasPreviousEpisode; });
+  nextButtons.forEach(button => { if (button) button.disabled = !hasNextEpisode; });
+
+  const label = $('externalEpisodeLabel');
+  if (!label) return;
+  if (!hasSelectedEpisode) {
+    label.innerHTML = '<strong>No episode selected</strong><span>Select an episode below to start watching.</span>';
+    return;
   }
+  const episode = currentEpisodes[currentEpisodeIndex];
+  const episodeNumber = episode.episodeNumber ?? currentEpisodeIndex + 1;
+  const title = episode.title || `Episode ${episodeNumber}`;
+  const strong = document.createElement('strong');
+  strong.textContent = `Episode ${episodeNumber} of ${currentEpisodes.length}`;
+  const detail = document.createElement('span');
+  detail.textContent = title;
+  label.replaceChildren(strong, detail);
 }
 
-function goToEpisode(index) {
-  if (index < 0 || index >= currentEpisodes.length) {
-    setMessage(index < 0 ? 'এটি প্রথম Episode।' : 'এটি শেষ Episode।');
+async function goToEpisode(index) {
+  if (!currentEpisodes.length) {
+    setMessage('আগে একটি Season-এর Episode লোড হতে দাও।');
+    return;
+  }
+  if (index >= 0 && index < currentEpisodes.length) {
+    playEpisode(index);
     return;
   }
 
-  playEpisode(index);
+  const seasonSelect = $('seasonSelect');
+  if (index < 0) {
+    // At the start of a season, move to the previous season's last available episode.
+    for (let seasonIndex = seasonSelect.selectedIndex - 1; seasonIndex >= 0; seasonIndex--) {
+      seasonSelect.selectedIndex = seasonIndex;
+      await loadEpisodes(seasonSelect.value);
+      if (currentEpisodes.length) {
+        playEpisode(currentEpisodes.length - 1);
+        return;
+      }
+    }
+    setMessage('এটাই প্রথম Season-এর প্রথম Episode।');
+    updateEpisodeNavigation();
+    return;
+  }
+
+  // At the end of a season, move to the next season's first available episode.
+  for (let seasonIndex = seasonSelect.selectedIndex + 1; seasonIndex < seasonSelect.options.length; seasonIndex++) {
+    seasonSelect.selectedIndex = seasonIndex;
+    await loadEpisodes(seasonSelect.value);
+    if (currentEpisodes.length) {
+      playEpisode(0);
+      return;
+    }
+  }
+  setMessage('এটাই শেষ Season-এর শেষ Episode।');
+  updateEpisodeNavigation();
 }
 
 $('centerPlay').addEventListener('click', togglePlayback);
@@ -811,258 +998,199 @@ $('centerPrevious').addEventListener('click', () => goToEpisode(currentEpisodeIn
 $('previousEpisode').addEventListener('click', () => goToEpisode(currentEpisodeIndex - 1));
 $('centerNext').addEventListener('click', () => goToEpisode(currentEpisodeIndex + 1));
 $('nextEpisode').addEventListener('click', () => goToEpisode(currentEpisodeIndex + 1));
-
+$('externalPreviousEpisode').addEventListener('click', () => goToEpisode(currentEpisodeIndex - 1));
+$('externalNextEpisode').addEventListener('click', () => goToEpisode(currentEpisodeIndex + 1));
+updateEpisodeNavigation();
 player.addEventListener('click', () => {
   if (shell.classList.contains('vimeo-active')) return;
-
-  if (player.paused) togglePlayback();
-  else showControls();
+  if (player.paused) togglePlayback(); else showControls();
 });
-
 shell.addEventListener('mousemove', showControls);
 shell.addEventListener('mouseenter', showControls);
 shell.addEventListener('mouseleave', hideControlsIfNeeded);
 shell.addEventListener('touchstart', showControls, {passive:true});
-
-player.addEventListener('play', () => {
-  updatePlayButtons();
-  showControls();
-});
-
-player.addEventListener('pause', () => {
-  updatePlayButtons();
-  shell.classList.remove('controls-hidden');
-  clearTimeout(hideControlsTimer);
-});
-
+player.addEventListener('play', () => { updatePlayButtons(); showControls(); });
+player.addEventListener('pause', () => { updatePlayButtons(); shell.classList.remove('controls-hidden'); clearTimeout(hideControlsTimer); });
 player.addEventListener('ended', () => {
   updatePlayButtons();
-
-  if (currentEpisodeIndex < currentEpisodes.length - 1) {
-    goToEpisode(currentEpisodeIndex + 1);
-  } else {
-    setStatus('এই Season-এর শেষ Episode শেষ হয়েছে।');
-  }
+  if (currentEpisodeIndex < currentEpisodes.length - 1) goToEpisode(currentEpisodeIndex + 1);
+  else setStatus('এই Season-এর শেষ Episode শেষ হয়েছে।');
 });
-
 player.addEventListener('timeupdate', updateProgress);
-player.addEventListener('loadedmetadata', updateProgress);
+player.addEventListener('loadedmetadata', () => { updateProgress(); refreshAudioOptions(); });
 player.addEventListener('durationchange', updateProgress);
-
 function updateProgress() {
   const duration = player.duration;
   const current = player.currentTime || 0;
-
   $('currentTime').textContent = formatTime(current);
   $('durationTime').textContent = formatTime(duration);
-
-  if (Number.isFinite(duration) && duration > 0) {
-    $('seekBar').value = Math.round((current / duration) * 1000);
-  } else {
-    $('seekBar').value = 0;
-  }
+  $('seekBar').value = Number.isFinite(duration) && duration > 0 ? Math.round((current / duration) * 1000) : 0;
 }
-
 $('seekBar').addEventListener('input', () => {
   if (shell.classList.contains('vimeo-active')) return;
-
-  if (Number.isFinite(player.duration) && player.duration > 0) {
-    player.currentTime = (Number($('seekBar').value) / 1000) * player.duration;
-  }
-
+  if (Number.isFinite(player.duration) && player.duration > 0) player.currentTime = (Number($('seekBar').value) / 1000) * player.duration;
   showControls();
 });
-
 $('volumeBar').addEventListener('input', () => {
   if (shell.classList.contains('vimeo-active')) return;
-
   player.volume = Number($('volumeBar').value);
   player.muted = player.volume === 0;
   updateVolumeButton();
 });
-
 $('muteButton').addEventListener('click', () => {
   if (shell.classList.contains('vimeo-active')) return;
-
   player.muted = !player.muted;
   updateVolumeButton();
 });
-
 function updateVolumeButton() {
-  $('muteButton').textContent =
-    player.muted || player.volume === 0 ? '🔇' : '🔊';
-
+  $('muteButton').textContent = player.muted || player.volume === 0 ? '🔇' : '🔊';
   $('volumeBar').value = player.muted ? 0 : player.volume;
 }
-
 $('playbackSpeed').addEventListener('change', () => {
   if (shell.classList.contains('vimeo-active')) {
-    setStatus('Vimeo playback speed পরিবর্তন করতে Vimeo player-এর settings ব্যবহার করো।');
+    setStatus('Vimeo playback speed পরিবর্তন করতে Vimeo player-এর Settings ব্যবহার করো।');
     return;
   }
-
   player.playbackRate = Number($('playbackSpeed').value);
   flashSpeedIndicator();
   showControls();
 });
+$('vimeoPlaybackSpeed').addEventListener('change', async () => {
+  const speed = Number($('vimeoPlaybackSpeed').value);
+  if (!shell.classList.contains('vimeo-active') || activeEmbedProvider !== 'Vimeo') {
+    setVimeoSpeedStatus('Vimeo player active নেই; Vimeo episode নির্বাচন করো.', 'error');
+    $('vimeoPlaybackSpeed').value = '1';
+    return;
+  }
+  if (!vimeoApiPlayer) {
+    setVimeoSpeedStatus('Vimeo SDK এখনো ready নয়। Player লোড হওয়ার পর আবার চেষ্টা করো.', 'error');
+    $('vimeoPlaybackSpeed').value = '1';
+    return;
+  }
+
+  const requestId = ++vimeoSpeedRequestId;
+  setVimeoSpeedStatus(`${speed}× speed সেট করার চেষ্টা চলছে...`);
+  let timeoutHandle;
+  try {
+    const result = await Promise.race([
+      vimeoApiPlayer.setPlaybackRate(speed),
+      new Promise((_, reject) => {
+        timeoutHandle = setTimeout(() => reject(new Error('Vimeo speed request timed out')), 7000);
+      })
+    ]);
+    if (requestId !== vimeoSpeedRequestId || !shell.classList.contains('vimeo-active')) return;
+    $('vimeoPlaybackSpeed').value = String(result);
+    setVimeoSpeedStatus(`Playback speed সফলভাবে ${result}× হয়েছে।`, 'success');
+    setStatus(`Vimeo playback speed: ${result}×`);
+  } catch (error) {
+    console.warn('Vimeo custom speed could not be applied:', error);
+    if (requestId !== vimeoSpeedRequestId) return;
+    $('vimeoPlaybackSpeed').value = '1';
+    const reason = /timed out/i.test(error?.message || '')
+      ? 'Vimeo SDK উত্তর দেয়নি।'
+      : 'Vimeo এই video/account-এ SDK speed change অনুমতি দেয়নি।';
+    setVimeoSpeedStatus(`${reason} Pro feature চালু না থাকলে 0.5×–2× কাজ করবে না; ভিডিও চলতে থাকবে, Vimeo-এর নিজস্ব controls ব্যবহার করো.`, 'error');
+    setStatus('Vimeo custom speed control unavailable; video playback বন্ধ করা হয়নি।');
+  } finally {
+    clearTimeout(timeoutHandle);
+  }
+});
+
+$('loopButton').addEventListener('click', () => {
+  customLoopEnabled = !customLoopEnabled;
+  player.loop = customLoopEnabled;
+  $('loopButton').classList.toggle('active', customLoopEnabled);
+  $('loopButton').title = customLoopEnabled ? 'Loop episode: on' : 'Loop episode: off';
+  $('loopButton').setAttribute('aria-pressed', String(customLoopEnabled));
+  $('trackStatus').textContent = customLoopEnabled ? 'Current episode loop is on.' : 'Current episode loop is off.';
+});
 
 $('fullscreenButton').addEventListener('click', async () => {
   try {
-    if (document.fullscreenElement) {
-      await document.exitFullscreen();
-    } else if (shell.requestFullscreen) {
-      await shell.requestFullscreen();
-    } else if (player.webkitEnterFullscreen) {
-      player.webkitEnterFullscreen();
-    }
-  } catch (err) {
-    console.error('Fullscreen error:', err);
-  }
+    if (document.fullscreenElement) await document.exitFullscreen();
+    else if (shell.requestFullscreen) await shell.requestFullscreen();
+    else if (player.webkitEnterFullscreen) player.webkitEnterFullscreen();
+  } catch (err) { console.error('Fullscreen error:', err); }
 });
-
-document.addEventListener('fullscreenchange', () => {
-  showControls();
-});
-
+document.addEventListener('fullscreenchange', showControls);
 document.addEventListener('keydown', event => {
   const tag = document.activeElement?.tagName;
-
-  if (['INPUT','SELECT','TEXTAREA'].includes(tag)) return;
-  if (event.ctrlKey || event.altKey || event.metaKey) return;
-
-  if (event.code === 'Space') {
-    event.preventDefault();
-    togglePlayback();
-    showControls();
-  } else if (event.key === 'ArrowRight') {
-    if (
-      !shell.classList.contains('vimeo-active') &&
-      Number.isFinite(player.duration)
-    ) {
-      player.currentTime = Math.min(player.duration, player.currentTime + 10);
-    }
+  if (['INPUT','SELECT','TEXTAREA'].includes(tag) || event.ctrlKey || event.altKey || event.metaKey) return;
+  if (event.code === 'Space') { event.preventDefault(); togglePlayback(); showControls(); }
+  else if (event.key === 'ArrowRight') {
+    if (!shell.classList.contains('vimeo-active') && Number.isFinite(player.duration)) player.currentTime = Math.min(player.duration, player.currentTime + 10);
     showControls();
   } else if (event.key === 'ArrowLeft') {
-    if (!shell.classList.contains('vimeo-active')) {
-      player.currentTime = Math.max(0, player.currentTime - 10);
-    }
+    if (!shell.classList.contains('vimeo-active')) player.currentTime = Math.max(0, player.currentTime - 10);
     showControls();
-  } else if (event.key.toLowerCase() === 'f') {
-    $('fullscreenButton').click();
-  } else if (event.key.toLowerCase() === 'm') {
-    $('muteButton').click();
-  }
+  } else if (event.key.toLowerCase() === 'f') $('fullscreenButton').click();
+  else if (event.key.toLowerCase() === 'm') $('muteButton').click();
 });
 
 async function loadAnimeDetails() {
   const animeId = getAnimeIdFromURL();
-
-  if (!animeId) {
-    showError('No anime ID provided. Home page থেকে একটি anime নির্বাচন করো।');
-    return;
-  }
-
+  if (!animeId) { showError('No anime ID provided. Home page থেকে একটি anime নির্বাচন করো।'); return; }
   try {
     const response = await fetch(`${API_URL}/anime/${encodeURIComponent(animeId)}`);
-
-    if (!response.ok) {
-      throw new Error(`Anime API returned ${response.status}`);
-    }
-
+    if (!response.ok) throw new Error(`Anime API returned ${response.status}`);
     const anime = await response.json();
-
-    if (!anime || anime.error || !anime._id) {
-      throw new Error('Anime not found');
-    }
-
+    if (!anime || anime.error || !anime._id) throw new Error('Anime not found');
     currentAnime = anime;
     displayAnime(anime);
-
     await saveToWatchHistory(anime._id, anime.title, anime.poster || '');
   } catch (error) {
     console.error('Error loading anime:', error);
     showError('Anime details load হয়নি। Backend চালু আছে কি না এবং API URL পরীক্ষা করো।');
   }
 }
-
 function displayAnime(anime) {
   $('loadingState').style.display = 'none';
   $('animeContent').style.display = 'block';
-
   $('animeTitle').textContent = anime.title || 'Untitled Anime';
   $('overlayTitle').textContent = anime.title || 'AnimeDekho';
   document.title = `Watch ${anime.title || 'Anime'} - AnimeDekho`;
-
   $('animeRating').textContent = `⭐ ${anime.rating ?? 0}`;
   $('animeYear').textContent = anime.year || 'Year unknown';
   $('animeEpisodes').textContent = `${anime.totalEpisodes ?? '—'} Episodes`;
   $('animeStatus').textContent = anime.status || 'Unknown';
   $('animeDescription').textContent = anime.description || 'No description available.';
-
   const poster = anime.poster || anime.posterUrl || '';
   $('playerPoster').src = poster;
   player.poster = poster;
-
-  const genres = Array.isArray(anime.genre)
-    ? anime.genre
-    : Array.isArray(anime.genres) ? anime.genres : [];
-
+  const genres = Array.isArray(anime.genre) ? anime.genre : Array.isArray(anime.genres) ? anime.genres : [];
   $('genresList').replaceChildren();
-
   if (genres.length) {
     $('genresContainer').style.display = 'block';
-
     genres.forEach(genre => {
-      const span = document.createElement('span');
-      span.className = 'genre-tag';
-      span.textContent = genre;
-      $('genresList').appendChild(span);
+      const span = document.createElement('span'); span.className = 'genre-tag'; span.textContent = genre; $('genresList').appendChild(span);
     });
-  } else {
-    $('genresContainer').style.display = 'none';
-  }
-
+  } else $('genresContainer').style.display = 'none';
   checkIfFavorited(anime._id);
   loadSeasons(anime._id);
 }
-
 async function loadSeasons(animeId) {
   const select = $('seasonSelect');
   const grid = $('episodesGrid');
-
   select.innerHTML = '<option value="">Loading seasons...</option>';
   grid.innerHTML = '';
   setMessage('');
-
   try {
-    const response = await fetch(
-      `${API_URL}/seasons/anime/${encodeURIComponent(animeId)}`
-    );
-
-    if (!response.ok) {
-      throw new Error(`Season API returned ${response.status}`);
-    }
-
+    const response = await fetch(`${API_URL}/seasons/anime/${encodeURIComponent(animeId)}`);
+    if (!response.ok) throw new Error(`Season API returned ${response.status}`);
     const seasons = await response.json();
     select.replaceChildren();
-
     if (!Array.isArray(seasons) || seasons.length === 0) {
       select.innerHTML = '<option value="">No seasons available</option>';
       grid.innerHTML = '<p>No seasons available yet.</p>';
-      setMessage('Admin Dashboard থেকে আগে Season যোগ করতে হবে।');
+      setMessage('Admin Dashboard থেকে আগে Season যোগ করতে হবে.');
       return;
     }
-
     seasons.forEach(season => {
       const option = document.createElement('option');
       option.value = season._id;
-      option.textContent = season.title
-        ? `Season ${season.seasonNumber}: ${season.title}`
-        : `Season ${season.seasonNumber}`;
-
+      option.textContent = season.title ? `Season ${season.seasonNumber}: ${season.title}` : `Season ${season.seasonNumber}`;
       select.appendChild(option);
     });
-
     select.onchange = () => loadEpisodes(select.value);
     await loadEpisodes(select.value);
   } catch (error) {
@@ -1071,432 +1199,319 @@ async function loadSeasons(animeId) {
     grid.innerHTML = '<p>Season লোড হয়নি। Backend ও Season API পরীক্ষা করো।</p>';
   }
 }
-
 async function loadEpisodes(seasonId) {
   const grid = $('episodesGrid');
-
   grid.innerHTML = '<p>Loading episodes...</p>';
   currentEpisodes = [];
   currentEpisodeIndex = -1;
   resetPlayerForEpisode();
-
-  if (!seasonId) {
-    grid.innerHTML = '<p>প্রথমে Season নির্বাচন করো।</p>';
-    return;
-  }
-
+  updateEpisodeNavigation();
+  if (!seasonId) { grid.innerHTML = '<p>প্রথমে Season নির্বাচন করো।</p>'; return; }
   try {
-    const response = await fetch(
-      `${API_URL}/episodes/season/${encodeURIComponent(seasonId)}`
-    );
-
-    if (!response.ok) {
-      throw new Error(`Episode API returned ${response.status}`);
-    }
-
+    const response = await fetch(`${API_URL}/episodes/season/${encodeURIComponent(seasonId)}`);
+    if (!response.ok) throw new Error(`Episode API returned ${response.status}`);
     const episodes = await response.json();
-
-    if (!Array.isArray(episodes)) {
-      throw new Error('Invalid episode data');
-    }
-
-    currentEpisodes = episodes.slice().sort(
-      (a,b) => Number(a.episodeNumber || 0) - Number(b.episodeNumber || 0)
-    );
-
+    if (!Array.isArray(episodes)) throw new Error('Invalid episode data');
+    currentEpisodes = episodes.slice().sort((a,b) => Number(a.episodeNumber || 0) - Number(b.episodeNumber || 0));
     grid.replaceChildren();
-
+    updateEpisodeNavigation();
     if (!currentEpisodes.length) {
       grid.innerHTML = '<p>No episodes in this season yet.</p>';
-      setMessage('এই Season-এ এখনো Episode যোগ করা হয়নি।');
+      setMessage('এই Season-এ এখনো Episode যোগ করা হয়নি.');
       return;
     }
-
     currentEpisodes.forEach((episode,index) => {
       const card = document.createElement('button');
-
-      card.type = 'button';
-      card.className = 'episode-card';
-      card.dataset.index = String(index);
-
-      const title = document.createElement('strong');
-      title.textContent = `Episode ${episode.episodeNumber ?? index + 1}`;
-
-      const subtitle = document.createElement('small');
-      subtitle.textContent = episode.title ||
-        `Episode ${episode.episodeNumber ?? index + 1}`;
-
+      card.type = 'button'; card.className = 'episode-card'; card.dataset.index = String(index);
+      const title = document.createElement('strong'); title.textContent = `Episode ${episode.episodeNumber ?? index + 1}`;
+      const subtitle = document.createElement('small'); subtitle.textContent = episode.title || `Episode ${episode.episodeNumber ?? index + 1}`;
       card.append(title,subtitle);
       card.addEventListener('click', () => playEpisode(index));
       grid.appendChild(card);
     });
-
     setMessage(`${currentEpisodes.length} episode(s) available`);
   } catch (error) {
     console.error('Episode load error:', error);
     grid.innerHTML = '<p>Episodes load হয়নি। Backend-এর /episodes/season/:seasonId route পরীক্ষা করো।</p>';
   }
 }
-
 function markActiveEpisode() {
   document.querySelectorAll('.episode-card').forEach(card => {
-    card.classList.toggle(
-      'active',
-      Number(card.dataset.index) === currentEpisodeIndex
-    );
+    card.classList.toggle('active', Number(card.dataset.index) === currentEpisodeIndex);
   });
 }
-
 function getEpisodeCandidates(episode) {
   const candidates = [];
   const seen = new Set();
-
-  function addCandidate(url,name,serverIndex = -1) {
+  function addCandidate(url,name,serverIndex=-1) {
     if (typeof url !== 'string' || !url.trim()) return;
-
     url = url.trim();
-
-    let parsed;
-    try {
-      parsed = new URL(url);
-    } catch {
-      return;
+    // Admin can paste either a normal URL or a provider's full iframe embed snippet.
+    if (/<iframe\b/i.test(url)) {
+      const srcMatch = url.match(/<iframe\b[^>]*\bsrc\s*=\s*["']([^"']+)["']/i);
+      if (srcMatch) url = srcMatch[1].replace(/&amp;/g, '&');
     }
-
-    if (!['http:','https:'].includes(parsed.protocol)) return;
-    if (seen.has(url)) return;
-
-    seen.add(url);
-    candidates.push({url,name,serverIndex});
+    let parsed;
+    try { parsed = new URL(url, window.location.href); } catch { return; }
+    if (!['http:','https:'].includes(parsed.protocol) || seen.has(parsed.href)) return;
+    url = parsed.href;
+    seen.add(url); candidates.push({url,name,serverIndex});
   }
-
-  const servers = Array.isArray(episode.videoServers?.[currentLanguage])
-    ? episode.videoServers[currentLanguage]
-    : [];
-
-  for (let offset = 0; offset < servers.length; offset++) {
+  const servers = Array.isArray(episode.videoServers?.[currentLanguage]) ? episode.videoServers[currentLanguage] : [];
+  for (let offset=0; offset<servers.length; offset++) {
     const serverIndex = (currentServerIndex + offset) % servers.length;
     const server = servers[serverIndex];
-
-    addCandidate(
-      server?.url,
-      server?.name || `Server ${serverIndex + 1}`,
-      serverIndex
-    );
+    addCandidate(server?.url, server?.name || `Server ${serverIndex + 1}`, serverIndex);
   }
-
-  addCandidate(
-    episode.videoUrls?.[currentLanguage],
-    `${currentLanguage} video URL`
-  );
-
-  if (currentLanguage === 'english') {
-    addCandidate(episode.videoUrl,'Legacy video URL');
-  }
-
+  addCandidate(episode.videoUrls?.[currentLanguage], `${currentLanguage} video URL`);
+  if (currentLanguage === 'english') addCandidate(episode.videoUrl, 'Legacy video URL');
   return candidates;
+}
+
+function isDirectMediaUrl(rawUrl) {
+  try {
+    const url = new URL(rawUrl);
+    return /\.(mp4|m4v|webm|ogv|ogg|m3u8)(?:$)/i.test(url.pathname);
+  } catch { return false; }
+}
+function isHlsUrl(rawUrl) {
+  try { return /\.m3u8$/i.test(new URL(rawUrl).pathname); } catch { return false; }
+}
+function isLikelyEmbedUrl(rawUrl) {
+  try {
+    const u = new URL(rawUrl);
+    const host = u.hostname.toLowerCase();
+    return host === 'player.vimeo.com' || host.includes('youtube.com') || host === 'youtu.be' ||
+      host.includes('dailymotion.com') || host.includes('streamable.com') || /\/(embed|player)\//i.test(u.pathname);
+  } catch { return false; }
+}
+function loadCustomMedia(url, attemptId, episodeLabel, episode) {
+  releaseVimeoApiPlayer();
+  activeEmbedProvider = '';
+  setVimeoSpeedControlsVisible(false);
+  shell.classList.remove('vimeo-active');
+  vimeoFrame.onload = null; vimeoFrame.onerror = null;
+  clearVimeoLoadTimer(); vimeoFrame.removeAttribute('src');
+  player.controls = false;
+  if (hlsInstance) { try { hlsInstance.destroy(); } catch (_) {} hlsInstance = null; }
+  if (isHlsUrl(url)) {
+    if (player.canPlayType('application/vnd.apple.mpegurl')) {
+      player.src = url;
+    } else if (window.Hls && Hls.isSupported()) {
+      hlsInstance = new Hls({ enableWorker: true, lowLatencyMode: false });
+      hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => { refreshSubtitleOptions(); refreshAudioOptions(); refreshQualityOptions(); });
+      if (Hls.Events.AUDIO_TRACKS_UPDATED) hlsInstance.on(Hls.Events.AUDIO_TRACKS_UPDATED, () => refreshAudioOptions());
+      if (Hls.Events.SUBTITLE_TRACKS_UPDATED) hlsInstance.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, () => refreshSubtitleOptions());
+      if (Hls.Events.LEVELS_UPDATED) hlsInstance.on(Hls.Events.LEVELS_UPDATED, () => refreshQualityOptions());
+      hlsInstance.on(Hls.Events.ERROR, (_event, data) => {
+        if (attemptId !== videoAttemptId || !data.fatal) return;
+        setStatus('HLS ভিডিও লোড হয়নি। URL/CORS/hosting পরীক্ষা করো।');
+        setMessage('এই HLS link browser-এ চালানোর অনুমতি (CORS) দিতে হবে।');
+      });
+    } else {
+      setStatus('এই browser-এ HLS playback সমর্থিত নয়।');
+      setMessage('MP4/WebM direct link ব্যবহার করো অথবা HLS-compatible browser চেষ্টা করো।');
+      return;
+    }
+  } else {
+    player.src = url;
+  }
+  installSidecarSubtitles(episode);
+  player.load();
+  player.play().catch(error => {
+    if (attemptId !== videoAttemptId) return;
+    console.warn('Autoplay blocked or waiting for user action:', error);
+    setStatus(`${episodeLabel} প্রস্তুত—Play চাপো।`);
+  });
+}
+function loadEmbedUrl(url, attemptId, episodeLabel, providerName='Embed') {
+  releaseVimeoApiPlayer();
+  player.pause(); player.removeAttribute('src'); player.load();
+  if (hlsInstance) { try { hlsInstance.destroy(); } catch (_) {} hlsInstance = null; }
+  activeEmbedProvider = providerName;
+  setVimeoSpeedControlsVisible(providerName === 'Vimeo');
+  shell.classList.add('vimeo-active');
+  $('serverStatus').textContent = `Opening ${providerName} Player`;
+  setStatus(`Opening ${episodeLabel}...`);
+  setMessage(`${providerName} player ব্যবহার হচ্ছে। এর নিজস্ব controls embed-এর ভিতরেই কাজ করবে।`);
+  initializeVimeoPlayer(url, attemptId, episodeLabel);
 }
 
 function playEpisode(index) {
   const episode = currentEpisodes[index];
-
-  if (!episode) {
-    setMessage('Episode পাওয়া যায়নি।');
-    return;
-  }
-
+  if (!episode) { setMessage('Episode পাওয়া যায়নি।'); return; }
   currentEpisodeIndex = index;
   markActiveEpisode();
-
-  $('overlayTitle').textContent =
-    `${currentAnime?.title || 'Anime'} — Episode ${episode.episodeNumber ?? index + 1}`;
-
+  updateEpisodeNavigation();
+  const episodeLabel = `Episode ${episode.episodeNumber ?? index + 1}`;
+  $('overlayTitle').textContent = `${currentAnime?.title || 'Anime'} — ${episodeLabel}`;
   videoAttemptId++;
   const thisAttemptId = videoAttemptId;
-
   clearRetryTimer();
   fallbackAttempts = 0;
-
   resetPlayerForEpisode();
-
   const candidates = getEpisodeCandidates(episode);
   activeVideoCandidates = candidates;
   activeCandidateIndex = -1;
-
   player.playbackRate = Number($('playbackSpeed').value);
+  player.loop = customLoopEnabled;
   player.poster = $('playerPoster').src || '';
-
-  saveToWatchHistory(
-    currentAnime?._id,
-    currentAnime?.title || '',
-    currentAnime?.poster || currentAnime?.posterUrl || '',
-    episode.episodeNumber ?? index + 1
-  );
+  saveToWatchHistory(currentAnime?._id,currentAnime?.title || '',currentAnime?.poster || currentAnime?.posterUrl || '',episode.episodeNumber ?? index + 1);
 
   if (!candidates.length) {
-    setStatus(`Episode ${episode.episodeNumber ?? index + 1}: ভিডিও URL পাওয়া যায়নি।`);
+    setStatus(`${episodeLabel}: ভিডিও URL পাওয়া যায়নি।`);
     setMessage(`${currentLanguage} Dub-এর জন্য Admin Dashboard-এ valid video URL যোগ করো।`);
     $('serverStatus').textContent = 'No video URL';
     return;
   }
 
   let candidateIndex = 0;
-
   function tryCandidate() {
     if (thisAttemptId !== videoAttemptId) return;
-
     clearRetryTimer();
-
-    if (
-      candidateIndex >= candidates.length ||
-      fallbackAttempts >= MAX_SERVER_ATTEMPTS
-    ) {
+    if (candidateIndex >= candidates.length || fallbackAttempts >= MAX_SERVER_ATTEMPTS) {
       setStatus('ভিডিও চালানো যাচ্ছে না। অন্য Server অথবা video URL পরীক্ষা করো।');
       setMessage('সব চেষ্টা ব্যর্থ হয়েছে। URL, video format এবং server access পরীক্ষা করো।');
       $('serverStatus').textContent = 'All attempts failed';
       return;
     }
-
     const candidate = candidates[candidateIndex];
+    const vimeoUrl = getVimeoEmbedUrl(candidate.url);
     activeCandidateIndex = candidateIndex;
     fallbackAttempts++;
-
     if (candidate.serverIndex >= 0) {
       currentServerIndex = candidate.serverIndex;
       $('serverSelect').value = String(currentServerIndex);
     }
-
     $('serverStatus').textContent = `Trying ${candidate.name}`;
-    setStatus(`Loading Episode ${episode.episodeNumber ?? index + 1}...`);
+    setStatus(`Loading ${episodeLabel}...`);
     setMessage(`${candidate.name} চেষ্টা করা হচ্ছে...`);
 
-    const vimeoUrl = getVimeoEmbedUrl(candidate.url);
-
+    const requestedMode = $('playerMode').value;
+    const directMedia = isDirectMediaUrl(candidate.url);
     if (vimeoUrl) {
-      clearRetryTimer();
-
-      player.pause();
-      player.removeAttribute('src');
-      player.load();
-
-      shell.classList.add('vimeo-active');
-
-      vimeoFrame.onload = () => {
-        if (thisAttemptId !== videoAttemptId) return;
-
-        $('serverStatus').textContent = 'Vimeo Player Opened';
-        setStatus(`Episode ${episode.episodeNumber ?? index + 1} — Vimeo`);
-        setMessage('Vimeo player খুলেছে। ভিডিও চালাতে Vimeo-এর নিজস্ব Play বাটনে ক্লিক করো।');
-      };
-
-      vimeoFrame.src = vimeoUrl;
-      $('serverStatus').textContent = 'Opening Vimeo Player';
-      setStatus(`Opening Episode ${episode.episodeNumber ?? index + 1}...`);
-      setMessage('Vimeo player লোড হচ্ছে।');
-
-      // Vimeo iframe load হওয়া মানেই ভিডিওটি চালানো যাবে এমন নিশ্চয়তা নয়.
-      // Video unavailable/500 হলে Vimeo-এর URL/privacy পরীক্ষা করতে হবে.
+      // Vimeo links must remain inside Vimeo's cross-origin iframe. A custom HTML5
+      // player cannot control Vimeo's internal video stream on a Free account.
+      if (requestedMode === 'custom') {
+        $('playerMode').value = 'vimeo';
+        setMessage('এই Vimeo link-কে Custom controls দিয়ে চালানো যায় না। Vimeo / Embed Player নির্বাচন করা হয়েছে। Custom Player-এর জন্য direct MP4/WebM/HLS URL লাগবে।');
+      }
+      loadEmbedUrl(vimeoUrl, thisAttemptId, episodeLabel, 'Vimeo');
       return;
     }
 
-    // Non-Vimeo direct video URLs use the HTML5 player.
-    vimeoFrame.onload = null;
-    vimeoFrame.removeAttribute('src');
-    shell.classList.remove('vimeo-active');
+    if (directMedia && requestedMode !== 'vimeo') {
+      loadCustomMedia(candidate.url, thisAttemptId, episodeLabel, episode);
+      retryTimer = setTimeout(() => {
+        if (thisAttemptId !== videoAttemptId || shell.classList.contains('vimeo-active')) return;
+        if (player.readyState < 2) { candidateIndex++; tryCandidate(); }
+      }, VIDEO_START_TIMEOUT);
+      return;
+    }
 
-    player.src = candidate.url;
-    player.load();
+    // Non-media links are treated as embeddable provider URLs. This plays in an
+    // iframe, but cross-origin provider controls cannot be replaced by our overlay.
+    if (!directMedia) {
+      if (requestedMode === 'custom') {
+        $('playerMode').value = 'vimeo';
+        setMessage('এটি direct video file নয়। Embed Player নির্বাচন করা হয়েছে; custom controls-এর জন্য MP4/WebM/HLS direct URL লাগবে।');
+      }
+      loadEmbedUrl(candidate.url, thisAttemptId, episodeLabel, isLikelyEmbedUrl(candidate.url) ? 'Embed' : 'External');
+      return;
+    }
 
-    retryTimer = setTimeout(() => {
-      if (thisAttemptId !== videoAttemptId) return;
-      if (shell.classList.contains('vimeo-active')) return;
-
-      candidateIndex++;
-      tryCandidate();
-    }, VIDEO_START_TIMEOUT);
-
-    player.play().catch(error => {
-      if (thisAttemptId !== videoAttemptId) return;
-      console.warn('Autoplay/play attempt failed:', error);
-    });
+    // User explicitly selected Vimeo/Embed Player for a direct media file.
+    loadEmbedUrl(candidate.url, thisAttemptId, episodeLabel, 'Embed');
   }
 
-  // Add a fresh error listener for each selected episode.
-  player.addEventListener('error', function onCandidateError() {
-    if (thisAttemptId !== videoAttemptId) return;
-    if (shell.classList.contains('vimeo-active')) return;
+  // Replace stale error handlers so errors from an earlier episode cannot trigger extra retries.
+  player.onerror = () => {
+    if (thisAttemptId !== videoAttemptId || shell.classList.contains('vimeo-active')) return;
     if (candidateIndex >= candidates.length) return;
-
     clearRetryTimer();
     candidateIndex++;
     tryCandidate();
-  }, {once:true});
-
+  };
   tryCandidate();
 }
 
 player.addEventListener('playing', () => {
   if (shell.classList.contains('vimeo-active')) return;
-
   clearRetryTimer();
-
   const episode = currentEpisodes[currentEpisodeIndex];
   if (!episode) return;
-
-  setStatus(
-    `Now playing: Episode ${episode.episodeNumber ?? currentEpisodeIndex + 1}` +
-    (episode.title ? ` — ${episode.title}` : '')
-  );
-
+  setStatus(`Now playing: Episode ${episode.episodeNumber ?? currentEpisodeIndex + 1}${episode.title ? ` — ${episode.title}` : ''}`);
   setMessage('ভিডিও চালু হয়েছে।');
-
-  $('serverStatus').textContent =
-    `Playing: ${activeVideoCandidates[activeCandidateIndex]?.name || 'Video server'}`;
-
+  $('serverStatus').textContent = `Playing: ${activeVideoCandidates[activeCandidateIndex]?.name || 'Video server'}`;
   updatePlayButtons();
 });
-
 player.addEventListener('waiting', () => {
-  if (
-    currentEpisodeIndex >= 0 &&
-    !shell.classList.contains('vimeo-active')
-  ) {
-    setStatus('Buffering video...');
-  }
+  if (currentEpisodeIndex >= 0 && !shell.classList.contains('vimeo-active')) setStatus('Buffering video...');
+});
+$('playerMode').addEventListener('change', () => {
+  if (currentEpisodeIndex >= 0) playEpisode(currentEpisodeIndex);
 });
 
 $('serverSelect').addEventListener('change', function() {
   currentServerIndex = Number(this.value);
   $('serverStatus').textContent = `Selected Server ${currentServerIndex + 1}`;
-
-  if (currentEpisodeIndex >= 0) {
-    playEpisode(currentEpisodeIndex);
-  }
+  if (currentEpisodeIndex >= 0) playEpisode(currentEpisodeIndex);
 });
-
 document.querySelectorAll('.language-btn').forEach(button => {
   button.addEventListener('click', () => {
     currentLanguage = button.dataset.language;
-
-    document.querySelectorAll('.language-btn').forEach(btn => {
-      btn.classList.toggle('active', btn === button);
-    });
-
-    if (currentEpisodeIndex >= 0) {
-      playEpisode(currentEpisodeIndex);
-    }
+    document.querySelectorAll('.language-btn').forEach(btn => btn.classList.toggle('active', btn === button));
+    if (currentEpisodeIndex >= 0) playEpisode(currentEpisodeIndex);
   });
 });
 
 function toggleFavorite() {
   const animeId = currentAnime?._id || getAnimeIdFromURL();
   if (!animeId) return;
-
   let favorites = [];
-
-  try {
-    favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
-    if (!Array.isArray(favorites)) favorites = [];
-  } catch {
-    favorites = [];
-  }
-
+  try { favorites = JSON.parse(localStorage.getItem('favorites') || '[]'); if (!Array.isArray(favorites)) favorites = []; } catch { favorites = []; }
   const index = favorites.indexOf(animeId);
-
-  if (index >= 0) favorites.splice(index,1);
-  else favorites.push(animeId);
-
+  if (index >= 0) favorites.splice(index,1); else favorites.push(animeId);
   localStorage.setItem('favorites',JSON.stringify(favorites));
   checkIfFavorited(animeId);
 }
-
 function checkIfFavorited(animeId) {
   let favorites = [];
-
-  try {
-    favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
-    if (!Array.isArray(favorites)) favorites = [];
-  } catch {
-    favorites = [];
-  }
-
+  try { favorites = JSON.parse(localStorage.getItem('favorites') || '[]'); if (!Array.isArray(favorites)) favorites = []; } catch { favorites = []; }
   const active = favorites.includes(animeId);
-
   $('btnFavorite').classList.toggle('active',active);
-  $('btnFavorite').textContent = active
-    ? '♥ Added to Favorites'
-    : '♡ Add to Favorites';
+  $('btnFavorite').textContent = active ? '♥ Added to Favorites' : '♡ Add to Favorites';
 }
-
 async function shareAnime() {
   const title = $('animeTitle').textContent;
   const url = window.location.href;
-
   try {
-    if (navigator.share) {
-      await navigator.share({
-        title:'AnimeDekho',
-        text:`Watch ${title} on AnimeDekho`,
-        url
-      });
-    } else if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(url);
-      alert('Anime link copied!');
-    } else {
-      prompt('Copy this anime link:',url);
-    }
+    if (navigator.share) await navigator.share({title:'AnimeDekho',text:`Watch ${title} on AnimeDekho`,url});
+    else if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(url); alert('Anime link copied!'); }
+    else prompt('Copy this anime link:',url);
   } catch (error) {
-    if (error.name !== 'AbortError') {
-      console.error('Share error:',error);
-      prompt('Copy this anime link:',url);
-    }
+    if (error.name !== 'AbortError') { console.error('Share error:',error); prompt('Copy this anime link:',url); }
   }
 }
-
-async function saveToWatchHistory(
-  animeId,
-  title,
-  poster,
-  episodeNumber = 1
-) {
+async function saveToWatchHistory(animeId,title,poster,episodeNumber=1) {
   const token = localStorage.getItem('token');
   if (!token || !animeId) return;
-
   try {
-    const response = await fetch(`${API_URL}/watch-history`, {
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'Authorization':`Bearer ${token}`
-      },
-      body:JSON.stringify({
-        animeId,
-        animeTitle:title,
-        posterUrl:poster,
-        episodeWatched:episodeNumber
-      })
+    const response = await fetch(`${API_URL}/watch-history`,{
+      method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
+      body:JSON.stringify({animeId,animeTitle:title,posterUrl:poster,episodeWatched:episodeNumber})
     });
-
-    if (!response.ok) {
-      console.warn('Watch history was not saved:',response.status);
-    }
-  } catch (error) {
-    console.error('Error saving watch history:',error);
-  }
+    if (!response.ok) console.warn('Watch history was not saved:',response.status);
+  } catch (error) { console.error('Error saving watch history:',error); }
 }
-
 function showError(message) {
   $('loadingState').style.display = 'none';
   $('errorState').innerHTML = '';
-
   const div = document.createElement('div');
-  div.className = 'error-message';
-  div.textContent = message;
-
+  div.className = 'error-message'; div.textContent = message;
   $('errorState').appendChild(div);
   $('errorState').style.display = 'block';
 }
-
 document.addEventListener('DOMContentLoaded', () => {
   updatePlayButtons();
   updateVolumeButton();
