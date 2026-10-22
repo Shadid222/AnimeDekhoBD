@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Watch Anime - AnimeDekho</title>
 <link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="data:,">
 <style>
 :root{--purple:#a47aff;--purple-dark:#8052d6;--panel:#17131f;--text:#e8e0f5}
 *{box-sizing:border-box}
@@ -199,7 +200,7 @@ body{background:#0b0910;color:var(--text)}
 
       <div class="video-player" id="videoPlayerShell">
         <video id="episodePlayer" playsinline preload="metadata" poster="">Your browser does not support video playback.</video>
-        <iframe id="vimeoPlayer" title="Vimeo video player" allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+        <iframe id="vimeoPlayer" title="Vimeo video player" allow="autoplay; picture-in-picture; clipboard-write; encrypted-media; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
         <div class="player-overlay" id="playerOverlay">
           <div class="player-top"><div class="player-title" id="overlayTitle">AnimeDekho</div><span class="speed-indicator" id="speedIndicator">1×</span></div>
           <div class="center-controls">
@@ -309,7 +310,7 @@ const API_URL = 'https://animedekhobd.onrender.com/api';
 const $ = id => document.getElementById(id);
 const player = $('episodePlayer');
 const shell = $('videoPlayerShell');
-const vimeoFrame = $('vimeoPlayer');
+let vimeoFrame = $('vimeoPlayer');
 let hlsInstance = null;
 let vimeoApiPlayer = null;
 let activeEmbedProvider = '';
@@ -322,6 +323,7 @@ let customLoopEnabled = false;
 let vimeoLoopEnabled = false;
 
 let videoAttemptId = 0;
+let episodesLoadRequestId = 0; // Prevent an older Season fetch from overwriting the currently selected Season.
 let retryTimer = null;
 let vimeoLoadTimer = null;
 let hideControlsTimer = null;
@@ -338,6 +340,11 @@ let activeCandidateIndex = -1;
 const MAX_SERVER_ATTEMPTS = 3;
 const VIDEO_START_TIMEOUT = 15000;
 let vimeoInitAttempt = 0;
+let vimeoSdkInitStartedFor = -1;
+let vimeoSdkReadyFor = -1;
+// Embed episodes are staged in the AnimeDekho player first; only a Play click opens Vimeo.
+let pendingEmbedLaunch = null;
+let vimeoAutoplayAttemptId = -1;
 
 function clearVimeoLoadTimer() {
   if (vimeoLoadTimer !== null) {
@@ -381,15 +388,33 @@ function releaseVimeoApiPlayer() {
   }
 }
 
+function recreateVimeoFrame() {
+  // Give every new episode/candidate a fresh browsing context. Reusing an iframe
+  // after rapidly removing/changing src can leave late load events or SDK state
+  // attached to the previous embed.
+  const oldFrame = vimeoFrame;
+  if (!oldFrame || !oldFrame.parentNode) return;
+  oldFrame.onload = null;
+  oldFrame.onerror = null;
+  const freshFrame = oldFrame.cloneNode(false);
+  freshFrame.removeAttribute('src');
+  freshFrame.onload = null;
+  freshFrame.onerror = null;
+  oldFrame.replaceWith(freshFrame);
+  vimeoFrame = freshFrame;
+}
+
 function destroyVimeoPlayer() {
-  // Invalidate pending callbacks before removing the current iframe.
+  // Invalidate callbacks and timers before replacing the current iframe.
+  pendingEmbedLaunch = null;
+  vimeoAutoplayAttemptId = -1;
   releaseVimeoApiPlayer();
   if (hlsInstance) { try { hlsInstance.destroy(); } catch (_) {} hlsInstance = null; }
   vimeoInitAttempt++;
+  vimeoSdkInitStartedFor = -1;
+  vimeoSdkReadyFor = -1;
   clearVimeoLoadTimer();
-  vimeoFrame.onload = null;
-  vimeoFrame.onerror = null;
-  vimeoFrame.removeAttribute('src');
+  recreateVimeoFrame();
   shell.classList.remove('vimeo-active');
   activeEmbedProvider = '';
   setVimeoSpeedControlsVisible(false);
@@ -447,8 +472,7 @@ async function initializeVimeoExternalControls(sdkPlayer, initId, attemptId) {
   sdkPlayer.on('pause', () => { if (initId === vimeoInitAttempt && attemptId === videoAttemptId) $('vimeoPlayPause').textContent = '▶ Play'; });
   sdkPlayer.on('ended', () => {
     if (initId !== vimeoInitAttempt || attemptId !== videoAttemptId || vimeoLoopEnabled) return;
-    if (currentEpisodeIndex < currentEpisodes.length - 1) goToEpisode(currentEpisodeIndex + 1);
-    else setStatus('এই Season-এর শেষ Episode শেষ হয়েছে।');
+    goToEpisode(currentEpisodeIndex + 1);
   });
   sdkPlayer.on('volumechange', data => {
     if (initId !== vimeoInitAttempt || attemptId !== videoAttemptId) return;
@@ -482,10 +506,16 @@ async function initializeVimeoExternalControls(sdkPlayer, initId, attemptId) {
 }
 
 async function connectVimeoSdk(initId, attemptId) {
+  if (initId !== vimeoInitAttempt || attemptId !== videoAttemptId) return;
+  if (vimeoSdkInitStartedFor === initId || vimeoSdkReadyFor === initId) return;
   if (!window.Vimeo || typeof window.Vimeo.Player !== 'function') {
     setVimeoSpeedStatus('Vimeo SDK script লোড হয়নি। Vimeo-এর নিজস্ব player controls ব্যবহার করো.', 'error');
     return;
   }
+
+  // Connect as soon as the iframe src is assigned. Do not rely only on iframe.onload:
+  // some browsers/rapid iframe replacements can delay that event even while Vimeo is initializing.
+  vimeoSdkInitStartedFor = initId;
   let sdkPlayer;
   try {
     sdkPlayer = new window.Vimeo.Player(vimeoFrame);
@@ -495,7 +525,24 @@ async function connectVimeoSdk(initId, attemptId) {
       try { await sdkPlayer.destroy(); } catch (_) {}
       return;
     }
+
+    vimeoSdkReadyFor = initId;
+    clearVimeoLoadTimer();
+    $('serverStatus').textContent = 'Vimeo Player Ready';
+    setStatus(`${$('overlayTitle').textContent || 'Episode'} — Vimeo player ready`);
+    setMessage('Vimeo player প্রস্তুত। ভিডিও নিজে থেকে না চললে Vimeo player-এর ভিতরের ▶ Play চাপো।');
     initializeVimeoExternalControls(sdkPlayer, initId, attemptId);
+
+    // Autoplay is attempted only after the user clicked AnimeDekho's Play button.
+    if (vimeoAutoplayAttemptId === attemptId) {
+      try {
+        await sdkPlayer.play();
+      } catch (playError) {
+        if (initId === vimeoInitAttempt && attemptId === videoAttemptId) {
+          setStatus('Vimeo player প্রস্তুত — ভিডিও চালাতে Vimeo-এর ভিতরের Play চাপো।');
+        }
+      }
+    }
     try {
       const rate = await sdkPlayer.getPlaybackRate();
       if (initId !== vimeoInitAttempt || attemptId !== videoAttemptId) return;
@@ -513,40 +560,73 @@ async function connectVimeoSdk(initId, attemptId) {
   }
 }
 
-function initializeVimeoPlayer(embedUrl, attemptId, episodeLabel) {
+function initializeVimeoPlayer(embedUrl, attemptId, episodeLabel, onLoadFailure) {
   const initId = ++vimeoInitAttempt;
   clearVimeoLoadTimer();
+  vimeoSdkInitStartedFor = -1;
+  vimeoSdkReadyFor = -1;
 
-  // Vimeo's native controls run inside the iframe. They do not require the Player SDK.
-  vimeoFrame.onload = () => {
+  // Start every Vimeo navigation in a fresh iframe. Attach handlers before src is set
+  // so an older/blank iframe load cannot be mistaken for this episode's load.
+  const oldFrame = vimeoFrame;
+  const freshFrame = oldFrame.cloneNode(false);
+  freshFrame.removeAttribute('src');
+  freshFrame.onload = null;
+  freshFrame.onerror = null;
+  oldFrame.replaceWith(freshFrame);
+  vimeoFrame = freshFrame;
+
+  let iframeLoaded = false;
+  freshFrame.onload = () => {
     if (initId !== vimeoInitAttempt || attemptId !== videoAttemptId) return;
-    clearVimeoLoadTimer();
-    $('serverStatus').textContent = 'Vimeo Player Loaded';
-    setStatus(`${episodeLabel} — embedded player opened`);
-    setMessage('Vimeo player opened. নিচের আলাদা Speed selector SDK দিয়ে চেষ্টা করবে; Free plan বা video settings অনুমতি না দিলে কাজ নাও করতে পারে।');
-    if (activeEmbedProvider === 'Vimeo') connectVimeoSdk(initId, attemptId);
+    iframeLoaded = true;
+    if (activeEmbedProvider === 'Vimeo') {
+      // SDK ready() is the useful signal for Vimeo; iframe.onload alone is not enough
+      // to confirm that the video is ready to receive API commands.
+      if (vimeoSdkInitStartedFor !== initId) connectVimeoSdk(initId, attemptId);
+      if (vimeoSdkReadyFor !== initId) {
+        $('serverStatus').textContent = 'Vimeo iframe loaded';
+        setStatus(`${episodeLabel} — Vimeo player খুলেছে`);
+        setMessage('Vimeo frame লোড হয়েছে। SDK দেরি করলে ভিডিওর নিজস্ব Play controls ব্যবহার করো।');
+      }
+    } else {
+      clearVimeoLoadTimer();
+      $('serverStatus').textContent = `${activeEmbedProvider || 'Embed'} Player Loaded`;
+      setStatus(`${episodeLabel} — embedded player opened`);
+      setMessage('Embedded player খুলেছে। ভিডিও চালাতে player-এর ভিতরের controls ব্যবহার করো।');
+    }
   };
 
-  vimeoFrame.onerror = () => {
+  freshFrame.onerror = () => {
     if (initId !== vimeoInitAttempt || attemptId !== videoAttemptId) return;
-    clearVimeoLoadTimer();
-    $('serverStatus').textContent = 'Vimeo Load Error';
-    setStatus(`${episodeLabel} — embedded player load failed`);
-    setMessage('Embed লোড হয়নি। URL, internet connection এবং provider-এর privacy/embed settings পরীক্ষা করো।');
+    $('serverStatus').textContent = 'Embed navigation error';
+    setStatus(`${episodeLabel} — embed navigation failed`);
+    setMessage('Embed খুলতে পারেনি। URL, internet connection এবং provider-এর embed/privacy settings পরীক্ষা করো।');
+    if (typeof onLoadFailure === 'function') onLoadFailure(new Error('Embed iframe navigation error'));
   };
 
-  // Avoid an endless "Opening Episode..." message if Vimeo is slow or blocked.
   vimeoLoadTimer = setTimeout(() => {
     if (initId !== vimeoInitAttempt || attemptId !== videoAttemptId) return;
-    $('serverStatus').textContent = 'Vimeo is taking longer to load';
-    setStatus(`${episodeLabel} — embed is still loading`);
-    setMessage('Embed উত্তর দিচ্ছে না। URL এবং provider-এর embedding permission পরীক্ষা করো।');
-  }, 15000);
+    vimeoLoadTimer = null;
 
-  // Setting src after the handlers ensures the first iframe load can be observed.
-  vimeoFrame.src = embedUrl;
+    // If the iframe navigation finished, don't destroy it just because the SDK is late.
+    // Vimeo's own in-frame Play control may still be usable even if custom SDK controls aren't.
+    if (iframeLoaded || vimeoSdkReadyFor === initId) {
+      $('serverStatus').textContent = vimeoSdkReadyFor === initId ? 'Vimeo Player Ready' : 'Vimeo loaded — SDK delayed';
+      setStatus(`${episodeLabel} — player opened`);
+      setMessage('Player frame লোড হয়েছে। Vimeo-র ভিতরের Play বাটন দিয়ে চেষ্টা করো; SDK controls অনুপলব্ধ হতে পারে।');
+      return;
+    }
+
+    $('serverStatus').textContent = 'Embed load timeout';
+    setStatus(`${episodeLabel} — embed load হচ্ছে না`);
+    setMessage('এই embed সময়মতো load হয়নি। Vimeo URL বা provider-এর embed/privacy permission পরীক্ষা করো; configured backup থাকলে সেটি চেষ্টা করা হচ্ছে।');
+    if (typeof onLoadFailure === 'function') onLoadFailure(new Error('Embed load timeout'));
+  }, VIDEO_START_TIMEOUT);
+
+  freshFrame.src = embedUrl;
+  if (activeEmbedProvider === 'Vimeo') connectVimeoSdk(initId, attemptId);
 }
-
 function getVimeoEmbedUrl(rawUrl) {
   try {
     const url = new URL(String(rawUrl).trim());
@@ -891,13 +971,38 @@ $('vimeoLoopButton').addEventListener('click', async () => {
 
 $('vimeoFullscreenButton').addEventListener('click', togglePlayerFullscreen);
 
-function resetPlayerForEpisode() {
+function resetPlayerForEpisode({ preserveVimeo = false } = {}) {
   clearRetryTimer();
+  clearVimeoLoadTimer();
+  pendingEmbedLaunch = null;
+  vimeoAutoplayAttemptId = -1;
   player.onerror = null;
   player.pause();
+
+  // Important: when moving between Vimeo episodes, keep the already-ready Vimeo
+  // player/iframe alive. Destroying and cloning it on every Next/Season change
+  // can race the SDK teardown against the next iframe initialization.
+  const canPreserveVimeo = preserveVimeo &&
+    vimeoApiPlayer &&
+    typeof vimeoApiPlayer.loadVideo === 'function' &&
+    vimeoSdkReadyFor === vimeoInitAttempt;
+
+  if (canPreserveVimeo) {
+    try {
+      const pausePromise = vimeoApiPlayer.pause();
+      if (pausePromise && typeof pausePromise.catch === 'function') pausePromise.catch(() => {});
+    } catch (_) {}
+    shell.classList.remove('vimeo-active');
+    activeEmbedProvider = 'Vimeo';
+    setVimeoSpeedControlsVisible(false);
+  } else {
+    destroyVimeoPlayer();
+  }
+
+  // Direct HTML5/HLS playback still gets a fresh media element state.
+  if (hlsInstance) { try { hlsInstance.destroy(); } catch (_) {} hlsInstance = null; }
   player.removeAttribute('src');
   player.load();
-  destroyVimeoPlayer();
   $('mediaTracksPanel').hidden = true;
   clearCustomTrackElements();
   $('seekBar').value = 0;
@@ -934,12 +1039,22 @@ function updatePlayButtons() {
   $('centerPlay').setAttribute('aria-label', playing ? 'Pause' : 'Play');
 }
 function togglePlayback() {
+  // First click after choosing a Vimeo episode opens the Vimeo player.
+  if (pendingEmbedLaunch) {
+    launchPendingEmbed();
+    return;
+  }
   if (shell.classList.contains('vimeo-active')) {
     $('vimeoPlayPause').click();
     return;
   }
   if (!player.currentSrc && !player.src) {
-    if (currentEpisodeIndex < 0 && currentEpisodes.length) playEpisode(0);
+    if (currentEpisodeIndex < 0 && currentEpisodes.length) {
+      playEpisode(0);
+      // On the initial poster, the user's Play click also opens Episode 1 if no
+      // episode had been selected yet. Normal episode-card/Next flow stays staged.
+      if (pendingEmbedLaunch) launchPendingEmbed();
+    }
     return;
   }
   if (player.paused) {
@@ -991,7 +1106,8 @@ async function goToEpisode(index) {
     // At the start of a season, move to the previous season's last available episode.
     for (let seasonIndex = seasonSelect.selectedIndex - 1; seasonIndex >= 0; seasonIndex--) {
       seasonSelect.selectedIndex = seasonIndex;
-      await loadEpisodes(seasonSelect.value);
+      const loaded = await loadEpisodes(seasonSelect.value);
+      if (!loaded) return;
       if (currentEpisodes.length) {
         playEpisode(currentEpisodes.length - 1);
         return;
@@ -1005,7 +1121,8 @@ async function goToEpisode(index) {
   // At the end of a season, move to the next season's first available episode.
   for (let seasonIndex = seasonSelect.selectedIndex + 1; seasonIndex < seasonSelect.options.length; seasonIndex++) {
     seasonSelect.selectedIndex = seasonIndex;
-    await loadEpisodes(seasonSelect.value);
+    const loaded = await loadEpisodes(seasonSelect.value);
+    if (!loaded) return;
     if (currentEpisodes.length) {
       playEpisode(0);
       return;
@@ -1036,8 +1153,9 @@ player.addEventListener('play', () => { updatePlayButtons(); showControls(); });
 player.addEventListener('pause', () => { updatePlayButtons(); shell.classList.remove('controls-hidden'); clearTimeout(hideControlsTimer); });
 player.addEventListener('ended', () => {
   updatePlayButtons();
-  if (currentEpisodeIndex < currentEpisodes.length - 1) goToEpisode(currentEpisodeIndex + 1);
-  else setStatus('এই Season-এর শেষ Episode শেষ হয়েছে।');
+  if (customLoopEnabled) return;
+  // goToEpisode() also advances to the next Season when this is the last episode.
+  goToEpisode(currentEpisodeIndex + 1);
 });
 player.addEventListener('timeupdate', updateProgress);
 player.addEventListener('loadedmetadata', () => { updateProgress(); refreshAudioOptions(); });
@@ -1296,7 +1414,7 @@ async function loadSeasons(animeId) {
       option.textContent = season.title ? `Season ${season.seasonNumber}: ${season.title}` : `Season ${season.seasonNumber}`;
       select.appendChild(option);
     });
-    select.onchange = () => loadEpisodes(select.value);
+    select.onchange = () => { loadEpisodes(select.value); }
     await loadEpisodes(select.value);
   } catch (error) {
     console.error('Season load error:', error);
@@ -1305,39 +1423,87 @@ async function loadSeasons(animeId) {
   }
 }
 async function loadEpisodes(seasonId) {
+  // Every season switch gets a fresh request ID. If the user switches seasons
+  // again before the previous fetch finishes, the older response is ignored.
+  const requestId = ++episodesLoadRequestId;
+  const requestedSeasonId = String(seasonId || '');
   const grid = $('episodesGrid');
+
+  // Invalidate old media errors, autoplay promises and retry timers as soon as
+  // the Season changes, rather than waiting for the API response.
+  videoAttemptId++;
+  clearRetryTimer();
+  player.onerror = null;
   grid.innerHTML = '<p>Loading episodes...</p>';
   currentEpisodes = [];
   currentEpisodeIndex = -1;
-  resetPlayerForEpisode();
+  resetPlayerForEpisode({ preserveVimeo: Boolean(vimeoApiPlayer && vimeoSdkReadyFor === vimeoInitAttempt) });
+  setStatus('Season-এর episode লোড হচ্ছে...');
+  $('serverStatus').textContent = 'Select an episode first';
   updateEpisodeNavigation();
-  if (!seasonId) { grid.innerHTML = '<p>প্রথমে Season নির্বাচন করো।</p>'; return; }
+
+  if (!requestedSeasonId) {
+    grid.innerHTML = '<p>প্রথমে Season নির্বাচন করো।</p>';
+    return true;
+  }
+
   try {
-    const response = await fetch(`${API_URL}/episodes/season/${encodeURIComponent(seasonId)}`);
+    const response = await fetch(`${API_URL}/episodes/season/${encodeURIComponent(requestedSeasonId)}`);
     if (!response.ok) throw new Error(`Episode API returned ${response.status}`);
     const episodes = await response.json();
+
+    // Ignore stale responses if another Season was selected while this request ran.
+    if (requestId !== episodesLoadRequestId || String($('seasonSelect').value || '') !== requestedSeasonId) {
+      return false;
+    }
     if (!Array.isArray(episodes)) throw new Error('Invalid episode data');
-    currentEpisodes = episodes.slice().sort((a,b) => Number(a.episodeNumber || 0) - Number(b.episodeNumber || 0));
+
+    currentEpisodes = episodes.slice().sort(
+      (a, b) => Number(a.episodeNumber || 0) - Number(b.episodeNumber || 0)
+    );
     grid.replaceChildren();
-    updateEpisodeNavigation();
+
     if (!currentEpisodes.length) {
       grid.innerHTML = '<p>No episodes in this season yet.</p>';
       setMessage('এই Season-এ এখনো Episode যোগ করা হয়নি.');
-      return;
+      updateEpisodeNavigation();
+      return true;
     }
-    currentEpisodes.forEach((episode,index) => {
+
+    currentEpisodes.forEach((episode, index) => {
       const card = document.createElement('button');
-      card.type = 'button'; card.className = 'episode-card'; card.dataset.index = String(index);
-      const title = document.createElement('strong'); title.textContent = `Episode ${episode.episodeNumber ?? index + 1}`;
-      const subtitle = document.createElement('small'); subtitle.textContent = episode.title || `Episode ${episode.episodeNumber ?? index + 1}`;
-      card.append(title,subtitle);
-      card.addEventListener('click', () => playEpisode(index));
+      card.type = 'button';
+      card.className = 'episode-card';
+      card.dataset.index = String(index);
+
+      const title = document.createElement('strong');
+      title.textContent = `Episode ${episode.episodeNumber ?? index + 1}`;
+      const subtitle = document.createElement('small');
+      subtitle.textContent = episode.title || `Episode ${episode.episodeNumber ?? index + 1}`;
+      card.append(title, subtitle);
+
+      card.addEventListener('click', () => {
+        // A card from a previous Season must never start playback for a stale index.
+        if (requestId !== episodesLoadRequestId) return;
+        if (String($('seasonSelect').value || '') !== requestedSeasonId) return;
+        playEpisode(index);
+      });
       grid.appendChild(card);
     });
+
     setMessage(`${currentEpisodes.length} episode(s) available`);
+    updateEpisodeNavigation();
+    return true;
   } catch (error) {
+    // A failed older request must not overwrite the current Season's UI.
+    if (requestId !== episodesLoadRequestId) return false;
     console.error('Episode load error:', error);
+    currentEpisodes = [];
+    currentEpisodeIndex = -1;
     grid.innerHTML = '<p>Episodes load হয়নি। Backend-এর /episodes/season/:seasonId route পরীক্ষা করো।</p>';
+    setMessage('Episode লোড হয়নি। আবার Season নির্বাচন করে চেষ্টা করো।');
+    updateEpisodeNavigation();
+    return false;
   }
 }
 function markActiveEpisode() {
@@ -1390,48 +1556,192 @@ function isLikelyEmbedUrl(rawUrl) {
       host.includes('dailymotion.com') || host.includes('streamable.com') || /\/(embed|player)\//i.test(u.pathname);
   } catch { return false; }
 }
-function loadCustomMedia(url, attemptId, episodeLabel, episode) {
+function loadCustomMedia(url, attemptId, episodeLabel, episode, onFatalError) {
   releaseVimeoApiPlayer();
   activeEmbedProvider = '';
   setVimeoSpeedControlsVisible(false);
   shell.classList.remove('vimeo-active');
-  vimeoFrame.onload = null; vimeoFrame.onerror = null;
-  clearVimeoLoadTimer(); vimeoFrame.removeAttribute('src');
+  vimeoFrame.onload = null;
+  vimeoFrame.onerror = null;
+  clearVimeoLoadTimer();
+  vimeoFrame.removeAttribute('src');
   player.controls = false;
-  if (hlsInstance) { try { hlsInstance.destroy(); } catch (_) {} hlsInstance = null; }
-  if (isHlsUrl(url)) {
-    if (player.canPlayType('application/vnd.apple.mpegurl')) {
-      player.src = url;
-    } else if (window.Hls && Hls.isSupported()) {
-      hlsInstance = new Hls({ enableWorker: true, lowLatencyMode: false });
-      hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => { refreshSubtitleOptions(); refreshAudioOptions(); refreshQualityOptions(); });
-      if (Hls.Events.AUDIO_TRACKS_UPDATED) hlsInstance.on(Hls.Events.AUDIO_TRACKS_UPDATED, () => refreshAudioOptions());
-      if (Hls.Events.SUBTITLE_TRACKS_UPDATED) hlsInstance.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, () => refreshSubtitleOptions());
-      if (Hls.Events.LEVELS_UPDATED) hlsInstance.on(Hls.Events.LEVELS_UPDATED, () => refreshQualityOptions());
-      hlsInstance.on(Hls.Events.ERROR, (_event, data) => {
-        if (attemptId !== videoAttemptId || !data.fatal) return;
-        setStatus('HLS ভিডিও লোড হয়নি। URL/CORS/hosting পরীক্ষা করো।');
-        setMessage('এই HLS link browser-এ চালানোর অনুমতি (CORS) দিতে হবে।');
+
+  if (hlsInstance) {
+    try { hlsInstance.destroy(); } catch (_) {}
+    hlsInstance = null;
+  }
+
+  const isCurrentAttempt = () => attemptId === videoAttemptId;
+  const tryAutoplay = () => {
+    if (!isCurrentAttempt() || shell.classList.contains('vimeo-active')) return;
+    const playPromise = player.play();
+    if (playPromise && typeof playPromise.catch === 'function') {
+      playPromise.catch(error => {
+        if (!isCurrentAttempt()) return;
+        console.warn('Autoplay blocked or waiting for user action:', error);
+        // A codec/format error is a source failure; a policy rejection simply
+        // means the viewer may need to press Play themselves.
+        if (error && error.name === 'NotSupportedError' && typeof onFatalError === 'function') {
+          onFatalError(error);
+          return;
+        }
+        setStatus(`${episodeLabel} প্রস্তুত—Play চাপো।`);
       });
-    } else {
-      setStatus('এই browser-এ HLS playback সমর্থিত নয়।');
-      setMessage('MP4/WebM direct link ব্যবহার করো অথবা HLS-compatible browser চেষ্টা করো।');
+    }
+  };
+
+  installSidecarSubtitles(episode);
+
+  if (isHlsUrl(url) && !player.canPlayType('application/vnd.apple.mpegurl')) {
+    if (!window.Hls || !Hls.isSupported()) {
+      const error = new Error('এই browser-এ HLS playback সমর্থিত নয়।');
+      setStatus(error.message);
+      setMessage('MP4/WebM direct URL ব্যবহার করো অথবা HLS-compatible browser চেষ্টা করো।');
+      if (typeof onFatalError === 'function') onFatalError(error);
+      return;
+    }
+
+    const hls = new Hls({ enableWorker: true, lowLatencyMode: false });
+    hlsInstance = hls;
+    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      if (!isCurrentAttempt() || hlsInstance !== hls) return;
+      refreshSubtitleOptions();
+      refreshAudioOptions();
+      refreshQualityOptions();
+      tryAutoplay();
+    });
+    hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+      if (!isCurrentAttempt() || hlsInstance !== hls) return;
+      hls.loadSource(url);
+    });
+    if (Hls.Events.AUDIO_TRACKS_UPDATED) hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, () => {
+      if (isCurrentAttempt() && hlsInstance === hls) refreshAudioOptions();
+    });
+    if (Hls.Events.SUBTITLE_TRACKS_UPDATED) hls.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, () => {
+      if (isCurrentAttempt() && hlsInstance === hls) refreshSubtitleOptions();
+    });
+    if (Hls.Events.LEVELS_UPDATED) hls.on(Hls.Events.LEVELS_UPDATED, () => {
+      if (isCurrentAttempt() && hlsInstance === hls) refreshQualityOptions();
+    });
+    hls.on(Hls.Events.ERROR, (_event, data) => {
+      if (!isCurrentAttempt() || hlsInstance !== hls || !data.fatal) return;
+      const error = new Error(`Fatal HLS error: ${data.type || 'unknown'}`);
+      console.error('HLS playback error:', data);
+      setStatus('HLS ভিডিও লোড হয়নি। URL/CORS/hosting পরীক্ষা করো।');
+      setMessage('HLS playlist ও segment URL-এ CORS access আছে কি না পরীক্ষা করো। Backup server থাকলে সেটি চেষ্টা করা হচ্ছে...');
+      if (typeof onFatalError === 'function') onFatalError(error);
+      else {
+        try { hls.destroy(); } catch (_) {}
+        if (hlsInstance === hls) hlsInstance = null;
+      }
+    });
+
+    // Both calls are required: creating Hls alone will leave the player loading forever.
+    hls.attachMedia(player);
+    return;
+  }
+
+  // Native-HLS browsers and ordinary MP4/WebM files use the browser media pipeline.
+  player.src = url;
+  player.load();
+  tryAutoplay();
+}
+async function launchPendingEmbed() {
+  const pending = pendingEmbedLaunch;
+  if (!pending) return;
+  if (pending.attemptId !== videoAttemptId) {
+    pendingEmbedLaunch = null;
+    return;
+  }
+  pendingEmbedLaunch = null;
+
+  let launchUrl = pending.url;
+  if (pending.providerName === 'Vimeo') {
+    try {
+      const parsed = new URL(launchUrl);
+      parsed.searchParams.set('autoplay', '1');
+      parsed.searchParams.set('controls', '1');
+      launchUrl = parsed.toString();
+    } catch (_) {}
+    vimeoAutoplayAttemptId = pending.attemptId;
+
+    // Key fix: for Next/Season transitions reuse the current ready Vimeo player
+    // and ask its SDK to load the new video. Do not destroy the player and race
+    // a new iframe against the previous SDK's asynchronous teardown.
+    const reusablePlayer = vimeoApiPlayer &&
+      typeof vimeoApiPlayer.loadVideo === 'function' &&
+      vimeoSdkReadyFor === vimeoInitAttempt;
+
+    if (reusablePlayer) {
+      const sdkPlayer = vimeoApiPlayer;
+      const initId = vimeoInitAttempt;
+      shell.classList.add('vimeo-active');
+      activeEmbedProvider = 'Vimeo';
+      setVimeoSpeedControlsVisible(true);
+      clearVimeoLoadTimer();
+      $('serverStatus').textContent = 'Loading next Vimeo video...';
+      setStatus(`${pending.episodeLabel} — Vimeo-তে ভিডিও লোড হচ্ছে...`);
+      setMessage('একই Vimeo player-এর মধ্যে নতুন episode লোড হচ্ছে; পেজ refresh করার দরকার নেই।');
+
+      try {
+        // loadVideo accepts a Vimeo URL; retaining the URL also preserves the
+        // h parameter required by unlisted videos.
+        await sdkPlayer.loadVideo({ url: launchUrl });
+        if (pending.attemptId !== videoAttemptId || sdkPlayer !== vimeoApiPlayer || initId !== vimeoInitAttempt) return;
+        initializeVimeoExternalControls(sdkPlayer, initId, pending.attemptId);
+        $('serverStatus').textContent = 'Vimeo Player Ready';
+        setStatus(`${pending.episodeLabel} — Vimeo player ready`);
+        try {
+          await sdkPlayer.play();
+          if (pending.attemptId === videoAttemptId) setMessage('ভিডিও চালু হয়েছে।');
+        } catch (playError) {
+          if (pending.attemptId === videoAttemptId) {
+            console.info('Vimeo autoplay was blocked; use the Vimeo in-player Play button.', playError);
+            setMessage('নতুন episode লোড হয়েছে। Vimeo-র ভিতরের ▶ Play চাপো।');
+          }
+        }
+      } catch (error) {
+        console.error(`Vimeo loadVideo failed for ${pending.episodeLabel}:`, error);
+        if (pending.attemptId !== videoAttemptId) return;
+        shell.classList.remove('vimeo-active');
+        setStatus(`${pending.episodeLabel} Vimeo-তে লোড হয়নি।`);
+        setMessage(`Vimeo SDK video load error (${error?.name || 'Error'}). ভিডিওটি unlisted হলে URL-এ সঠিক h= privacy hash আছে কি না এবং Embed permission পরীক্ষা করো।`);
+        if (typeof pending.onLoadFailure === 'function') pending.onLoadFailure(error);
+      }
       return;
     }
   } else {
-    player.src = url;
+    vimeoAutoplayAttemptId = -1;
   }
-  installSidecarSubtitles(episode);
-  player.load();
-  player.play().catch(error => {
-    if (attemptId !== videoAttemptId) return;
-    console.warn('Autoplay blocked or waiting for user action:', error);
-    setStatus(`${episodeLabel} প্রস্তুত—Play চাপো।`);
-  });
+
+  // First Vimeo episode (or when no ready player exists): build a new iframe once.
+  loadEmbedUrl(launchUrl, pending.attemptId, pending.episodeLabel, pending.providerName, pending.onLoadFailure);
 }
-function loadEmbedUrl(url, attemptId, episodeLabel, providerName='Embed') {
+
+function stageEmbedLaunch(url, attemptId, episodeLabel, providerName, onLoadFailure, candidateName) {
+  if (attemptId !== videoAttemptId) return;
+  pendingEmbedLaunch = { url, attemptId, episodeLabel, providerName, onLoadFailure };
+  shell.classList.remove('vimeo-active');
+  if (vimeoApiPlayer && typeof vimeoApiPlayer.pause === 'function') {
+    try {
+      const pausePromise = vimeoApiPlayer.pause();
+      if (pausePromise && typeof pausePromise.catch === 'function') pausePromise.catch(() => {});
+    } catch (_) {}
+  }
+  player.controls = false;
+  player.pause();
+  $('serverStatus').textContent = `${candidateName || providerName} ready — Play চাপো`;
+  setStatus(`${episodeLabel} প্রস্তুত — Play চাপলে ${providerName} player খুলবে।`);
+  setMessage('আগের AnimeDekho player দেখা যাচ্ছে। ভিডিও চালাতে মাঝের ▶ Play button চাপো; এরপর Vimeo-এর নিজস্ব player খুলবে।');
+  updatePlayButtons();
+}
+
+function loadEmbedUrl(url, attemptId, episodeLabel, providerName='Embed', onLoadFailure) {
   releaseVimeoApiPlayer();
-  player.pause(); player.removeAttribute('src'); player.load();
+  player.pause();
+  player.removeAttribute('src');
+  player.load();
   if (hlsInstance) { try { hlsInstance.destroy(); } catch (_) {} hlsInstance = null; }
   activeEmbedProvider = providerName;
   setVimeoSpeedControlsVisible(providerName === 'Vimeo');
@@ -1439,29 +1749,44 @@ function loadEmbedUrl(url, attemptId, episodeLabel, providerName='Embed') {
   $('serverStatus').textContent = `Opening ${providerName} Player`;
   setStatus(`Opening ${episodeLabel}...`);
   setMessage(`${providerName} player ব্যবহার হচ্ছে। এর নিজস্ব controls embed-এর ভিতরেই কাজ করবে।`);
-  initializeVimeoPlayer(url, attemptId, episodeLabel);
+  initializeVimeoPlayer(url, attemptId, episodeLabel, onLoadFailure);
 }
 
 function playEpisode(index) {
   const episode = currentEpisodes[index];
-  if (!episode) { setMessage('Episode পাওয়া যায়নি।'); return; }
+  if (!episode) {
+    setMessage('Episode পাওয়া যায়নি। Season-এর episode list আবার লোড করে চেষ্টা করো।');
+    return;
+  }
+
   currentEpisodeIndex = index;
   markActiveEpisode();
   updateEpisodeNavigation();
   const episodeLabel = `Episode ${episode.episodeNumber ?? index + 1}`;
   $('overlayTitle').textContent = `${currentAnime?.title || 'Anime'} — ${episodeLabel}`;
+
   videoAttemptId++;
   const thisAttemptId = videoAttemptId;
   clearRetryTimer();
   fallbackAttempts = 0;
-  resetPlayerForEpisode();
+
   const candidates = getEpisodeCandidates(episode);
+  const episodeHasVimeoCandidate = candidates.some(candidate => Boolean(getVimeoEmbedUrl(candidate.url)));
+  const keepExistingVimeo = episodeHasVimeoCandidate &&
+    Boolean(vimeoApiPlayer && vimeoSdkReadyFor === vimeoInitAttempt);
+  resetPlayerForEpisode({ preserveVimeo: keepExistingVimeo });
+
   activeVideoCandidates = candidates;
   activeCandidateIndex = -1;
   player.playbackRate = Number($('playbackSpeed').value);
   player.loop = customLoopEnabled;
   player.poster = $('playerPoster').src || '';
-  saveToWatchHistory(currentAnime?._id,currentAnime?.title || '',currentAnime?.poster || currentAnime?.posterUrl || '',episode.episodeNumber ?? index + 1);
+  saveToWatchHistory(
+    currentAnime?._id,
+    currentAnime?.title || '',
+    currentAnime?.poster || currentAnime?.posterUrl || '',
+    episode.episodeNumber ?? index + 1
+  );
 
   if (!candidates.length) {
     setStatus(`${episodeLabel}: ভিডিও URL পাওয়া যায়নি।`);
@@ -1471,71 +1796,92 @@ function playEpisode(index) {
   }
 
   let candidateIndex = 0;
+  let candidateFailureInProgress = false;
+
+  function failCurrentCandidate(error) {
+    if (thisAttemptId !== videoAttemptId || candidateFailureInProgress) return;
+    candidateFailureInProgress = true;
+    clearRetryTimer();
+    if (error) console.warn(`Playback source failed for ${episodeLabel}:`, error);
+    // Clear the failed iframe/player completely before moving to the next
+    // configured source so a stale navigation cannot block the backup source.
+    destroyVimeoPlayer();
+    candidateIndex++;
+    tryCandidate();
+  }
+
   function tryCandidate() {
     if (thisAttemptId !== videoAttemptId) return;
     clearRetryTimer();
+
     if (candidateIndex >= candidates.length || fallbackAttempts >= MAX_SERVER_ATTEMPTS) {
       setStatus('ভিডিও চালানো যাচ্ছে না। অন্য Server অথবা video URL পরীক্ষা করো।');
-      setMessage('সব চেষ্টা ব্যর্থ হয়েছে। URL, video format এবং server access পরীক্ষা করো।');
+      setMessage('সব চেষ্টা ব্যর্থ হয়েছে। URL, video format, CORS এবং server access পরীক্ষা করো।');
       $('serverStatus').textContent = 'All attempts failed';
       return;
     }
+
     const candidate = candidates[candidateIndex];
     const vimeoUrl = getVimeoEmbedUrl(candidate.url);
     activeCandidateIndex = candidateIndex;
     fallbackAttempts++;
+    candidateFailureInProgress = false;
+
     if (candidate.serverIndex >= 0) {
       currentServerIndex = candidate.serverIndex;
       $('serverSelect').value = String(currentServerIndex);
     }
+
     $('serverStatus').textContent = `Trying ${candidate.name}`;
     setStatus(`Loading ${episodeLabel}...`);
     setMessage(`${candidate.name} চেষ্টা করা হচ্ছে...`);
 
     const requestedMode = $('playerMode').value;
     const directMedia = isDirectMediaUrl(candidate.url);
+
     if (vimeoUrl) {
-      // Vimeo links must remain inside Vimeo's cross-origin iframe. A custom HTML5
-      // player cannot control Vimeo's internal video stream on a Free account.
       if (requestedMode === 'custom') {
         $('playerMode').value = 'vimeo';
-        setMessage('এই Vimeo link-কে Custom controls দিয়ে চালানো যায় না। Vimeo / Embed Player নির্বাচন করা হয়েছে। Custom Player-এর জন্য direct MP4/WebM/HLS URL লাগবে।');
       }
-      loadEmbedUrl(vimeoUrl, thisAttemptId, episodeLabel, 'Vimeo');
+      // Do not switch to the iframe just because an episode was selected.
+      // Keep the AnimeDekho poster/controls visible until the viewer presses Play.
+      stageEmbedLaunch(vimeoUrl, thisAttemptId, episodeLabel, 'Vimeo', failCurrentCandidate, candidate.name);
       return;
     }
 
     if (directMedia && requestedMode !== 'vimeo') {
-      loadCustomMedia(candidate.url, thisAttemptId, episodeLabel, episode);
-      retryTimer = setTimeout(() => {
-        if (thisAttemptId !== videoAttemptId || shell.classList.contains('vimeo-active')) return;
-        if (player.readyState < 2) { candidateIndex++; tryCandidate(); }
-      }, VIDEO_START_TIMEOUT);
+      const attemptedCandidateIndex = candidateIndex;
+      loadCustomMedia(candidate.url, thisAttemptId, episodeLabel, episode, failCurrentCandidate);
+      // loadCustomMedia may reject a source synchronously (for example, unsupported HLS).
+      // Do not leave a timeout behind for a candidate that has already been replaced.
+      if (thisAttemptId === videoAttemptId && candidateIndex === attemptedCandidateIndex && !candidateFailureInProgress) {
+        retryTimer = setTimeout(() => {
+          if (thisAttemptId !== videoAttemptId || shell.classList.contains('vimeo-active')) return;
+          if (player.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
+            failCurrentCandidate(new Error('Video did not become ready before timeout'));
+          }
+        }, VIDEO_START_TIMEOUT);
+      }
       return;
     }
 
-    // Non-media links are treated as embeddable provider URLs. This plays in an
-    // iframe, but cross-origin provider controls cannot be replaced by our overlay.
     if (!directMedia) {
       if (requestedMode === 'custom') {
         $('playerMode').value = 'vimeo';
-        setMessage('এটি direct video file নয়। Embed Player নির্বাচন করা হয়েছে; custom controls-এর জন্য MP4/WebM/HLS direct URL লাগবে।');
       }
-      loadEmbedUrl(candidate.url, thisAttemptId, episodeLabel, isLikelyEmbedUrl(candidate.url) ? 'Embed' : 'External');
+      const provider = isLikelyEmbedUrl(candidate.url) ? 'Embed' : 'External';
+      stageEmbedLaunch(candidate.url, thisAttemptId, episodeLabel, provider, failCurrentCandidate, candidate.name);
       return;
     }
 
-    // User explicitly selected Vimeo/Embed Player for a direct media file.
-    loadEmbedUrl(candidate.url, thisAttemptId, episodeLabel, 'Embed');
+    // Explicit Embed/Vimeo mode was selected for a direct video URL: stage it as well.
+    stageEmbedLaunch(candidate.url, thisAttemptId, episodeLabel, 'Embed', failCurrentCandidate, candidate.name);
   }
 
-  // Replace stale error handlers so errors from an earlier episode cannot trigger extra retries.
-  player.onerror = () => {
+  // Ignore late errors emitted by a previous episode and try a backup candidate only once per failure.
+  player.onerror = event => {
     if (thisAttemptId !== videoAttemptId || shell.classList.contains('vimeo-active')) return;
-    if (candidateIndex >= candidates.length) return;
-    clearRetryTimer();
-    candidateIndex++;
-    tryCandidate();
+    failCurrentCandidate(event?.message || player.error || new Error('HTML video error'));
   };
   tryCandidate();
 }
